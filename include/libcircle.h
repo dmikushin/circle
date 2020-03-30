@@ -1,6 +1,7 @@
 #ifndef LIBCIRCLE_H
 #define LIBCIRCLE_H
 
+#include <stddef.h>
 #include <stdint.h>
 
 /* define a C interface */
@@ -44,7 +45,7 @@ typedef enum CIRCLE_loglevel {
  * terminated string.
  */
 typedef struct {
-    int8_t (*enqueue)(char* element);
+    int8_t (*enqueue)(const char* element);
     int8_t (*dequeue)(char* element);
     uint32_t (*local_queue_size)(void);
 } CIRCLE_handle;

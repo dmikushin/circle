@@ -20,7 +20,7 @@ typedef struct CIRCLE_internal_queue_t {
 CIRCLE_internal_queue_t* CIRCLE_internal_queue_init(void);
 int8_t CIRCLE_internal_queue_free(CIRCLE_internal_queue_t* qp);
 
-int8_t CIRCLE_internal_queue_push(CIRCLE_internal_queue_t* qp, char* str);
+int8_t CIRCLE_internal_queue_push(CIRCLE_internal_queue_t* qp, const char* str);
 int8_t CIRCLE_internal_queue_pop(CIRCLE_internal_queue_t* qp, char* str);
 
 void CIRCLE_internal_queue_dump(CIRCLE_internal_queue_t* qp);

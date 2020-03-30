@@ -41,3 +41,8 @@ target_include_directories(check_queue PRIVATE ${CHECK_INCLUDE_DIRS})
 target_link_libraries(check_queue ${PROJECT_NAME} ${CHECK_LIBRARIES})
 target_link_directories(check_queue PRIVATE ${CHECK_LIBRARY_DIRS})
 
+add_executable(example "${CMAKE_CURRENT_SOURCE_DIR}/src/examples/example.cpp")
+target_include_directories(example PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_include_directories(example PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/filesystem/include)
+target_link_libraries(example ${PROJECT_NAME})
+

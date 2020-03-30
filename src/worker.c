@@ -66,7 +66,7 @@ static void CIRCLE_MPI_error_handler(MPI_Comm* comm, int* err, ...)
  * Wrapper for pushing an element on the queue
  *
  */
-static int8_t CIRCLE_enqueue(char* element)
+static int8_t CIRCLE_enqueue(const char* element)
 {
     return CIRCLE_internal_queue_push(CIRCLE_INPUT_ST.queue, element);
 }

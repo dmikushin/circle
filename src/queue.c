@@ -180,7 +180,7 @@ int8_t CIRCLE_internal_queue_extend(CIRCLE_internal_queue_t* qp, size_t new_size
  *
  * @return a positive number on success, a negative one on failure.
  */
-int8_t CIRCLE_internal_queue_push(CIRCLE_internal_queue_t* qp, char* str)
+int8_t CIRCLE_internal_queue_push(CIRCLE_internal_queue_t* qp, const char* str)
 {
     if(!str) {
         LOG(CIRCLE_LOG_ERR, "Attempted to push null pointer.");
