@@ -17,14 +17,13 @@ make -j4
 
 ## Build options
 
-To enable output from libcircle (including fatal errors), run configure with
-"--enable-loglevel=number" where "number" is one of the following options:
+To enable output from libcircle (including fatal errors), call `CIRCLE_enable_logging(enum CIRCLE_loglevel level)` with one of the following values:
 
-* "1" fatal errors only.
-* "2" errors and lower log levels.
-* "3" warnings and lower log levels.
-* "4" info messages on internal operations and lower log levels.
-* "5" fine grained debug messages and lower log levels.
+* `CIRCLE_LOG_FATAL`: fatal errors only.
+* `CIRCLE_LOG_ERR`: errors and lower log levels.
+* `CIRCLE_LOG_WARN`: warnings and lower log levels.
+* `CIRCLE_LOG_INFO`: info messages on internal operations and lower log levels.
+* `CIRCLE_LOG_DBG`: fine grained debug messages and lower log levels.
 
 ## Testing
 

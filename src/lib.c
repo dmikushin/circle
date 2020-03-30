@@ -50,7 +50,7 @@ CIRCLE_handle* CIRCLE_get_handle()
 __inline__ int32_t CIRCLE_init(int argc, char* argv[], int user_options)
 {
     CIRCLE_debug_stream = stdout;
-    CIRCLE_debug_level = CIRCLE_LOG_INFO;
+    CIRCLE_debug_level = CIRCLE_LOG_FATAL;
 
     /* initialize callback pointers */
     CIRCLE_INPUT_ST.create_cb      = NULL;

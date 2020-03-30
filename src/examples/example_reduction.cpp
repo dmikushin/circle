@@ -139,6 +139,7 @@ int main(int argc, char* argv[])
      * Do partial computations with libcircle.
      */
     int rank = CIRCLE_init(argc, argv, CIRCLE_DEFAULT_FLAGS);
+    CIRCLE_enable_logging(CIRCLE_LOG_INFO);
     CIRCLE_cb_create(&my_create_some_work);
     CIRCLE_cb_process(&my_process_some_work);
 

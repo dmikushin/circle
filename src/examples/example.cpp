@@ -67,6 +67,8 @@ int main(int argc, char* argv[])
      */
     int rank = CIRCLE_init(argc, argv, CIRCLE_DEFAULT_FLAGS);
 
+    CIRCLE_enable_logging(CIRCLE_LOG_INFO);
+
     /*
      * Processing and creating work is done through callbacks. Here's how we tell
      * libcircle about our function which creates the initial work. For MPI nerds,
