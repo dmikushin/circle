@@ -4,9 +4,11 @@ project(circle)
 
 enable_language(Fortran)
 
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 set(CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/modules)
 
 find_package(MPI REQUIRED)
+find_package(Check REQUIRED)
 
 # Enable C++ 11 support
 set(CMAKE_CXX_STANDARD 11)
@@ -26,3 +28,16 @@ add_library(${PROJECT_NAME} SHARED ${SRCS})
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_include_directories(${PROJECT_NAME} PRIVATE ${MPI_Fortran_INCLUDE_PATH})
 target_link_libraries(${PROJECT_NAME} ${MPI_C_LIBRARIES})
+
+add_executable(check_checkpoint "${CMAKE_CURRENT_SOURCE_DIR}/src/tests/check_checkpoint.c")
+target_include_directories(check_checkpoint PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_include_directories(check_checkpoint PRIVATE ${CHECK_INCLUDE_DIRS})
+target_link_libraries(check_checkpoint ${PROJECT_NAME} ${CHECK_LIBRARIES})
+target_link_directories(check_checkpoint PRIVATE ${CHECK_LIBRARY_DIRS})
+
+add_executable(check_queue "${CMAKE_CURRENT_SOURCE_DIR}/src/tests/check_queue.c")
+target_include_directories(check_queue PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_include_directories(check_queue PRIVATE ${CHECK_INCLUDE_DIRS})
+target_link_libraries(check_queue ${PROJECT_NAME} ${CHECK_LIBRARIES})
+target_link_directories(check_queue PRIVATE ${CHECK_LIBRARY_DIRS})
+
