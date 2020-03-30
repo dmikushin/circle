@@ -32,6 +32,8 @@ int8_t CIRCLE_ABORT_FLAG = 0;
 #define h_addr h_addr_list[0]
 #endif /* h_addr */
 
+const char* CIRCLE_backtrace(int skip);
+
 /**
  * @brief Function to be called in the event of an MPI error.
  *
@@ -42,6 +44,8 @@ int8_t CIRCLE_ABORT_FLAG = 0;
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 static void CIRCLE_MPI_error_handler(MPI_Comm* comm, int* err, ...)
 {
+    const char* backtrace = CIRCLE_backtrace(1);
+
     char name[MPI_MAX_OBJECT_NAME];
     int namelen;
     MPI_Comm_get_name(*comm, name, &namelen);
@@ -54,6 +58,7 @@ static void CIRCLE_MPI_error_handler(MPI_Comm* comm, int* err, ...)
         int error_len = 0;
         MPI_Error_string(*err, error, &error_len);
         LOG(CIRCLE_LOG_ERR, "MPI Error in Comm [%s]: %s", name, error);
+	LOG(CIRCLE_LOG_ERR, "Backtrace:\n%s\n", backtrace);
         LOG(CIRCLE_LOG_ERR, "Libcircle received MPI error, checkpointing.");
     }
 
