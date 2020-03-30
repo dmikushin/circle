@@ -1,0 +1,28 @@
+cmake_minimum_required(VERSION 3.9)
+
+project(circle)
+
+enable_language(Fortran)
+
+set(CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/modules)
+
+find_package(MPI REQUIRED)
+
+# Enable C++ 11 support
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+if ("x" STREQUAL "x${CMAKE_BUILD_TYPE}")
+set(CMAKE_BUILD_TYPE Release)
+endif()
+string(TOUPPER ${CMAKE_BUILD_TYPE} CMAKE_BUILD_TYPE_UPPER)
+
+file(GLOB SRCS
+	"${CMAKE_CURRENT_SOURCE_DIR}/src/*.c"
+	"${CMAKE_CURRENT_SOURCE_DIR}/src/*.f90")
+
+add_library(${PROJECT_NAME} SHARED ${SRCS})
+target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_include_directories(${PROJECT_NAME} PRIVATE ${MPI_Fortran_INCLUDE_PATH})
+target_link_libraries(${PROJECT_NAME} ${MPI_C_LIBRARIES})

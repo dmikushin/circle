@@ -1,20 +1,18 @@
-libcircle
-=========
-libcircle is an API for distributing embarrassingly parallel workloads using self-stabilization. Details on the algorithms used may be found at <http://dl.acm.org/citation.cfm?id=2389114>.
+# libcircle (CMake port)
 
-Dependencies
-------------
-* MPI <https://www.mpi-forum.org/>
-* e.g., Open MPI  <http://www.open-mpi.org/>
+`libcircle` is an API for distributing embarrassingly parallel workloads using self-stabilization. Details on the algorithms used may be found at <http://dl.acm.org/citation.cfm?id=2389114>.
 
-Compile and install
--------------------
-The current build status is: [![Build Status](https://travis-ci.org/hpc/libcircle.png?branch=master)](https://travis-ci.org/hpc/libcircle)
+## Prerequisites
+
+* MPI development and runtime, e.g. OpenMPI: <http://www.open-mpi.org/>
+
+## Building
 
 ```
-./configure
-make all check
-sudo make install
+mkdir build
+cd build
+cmake ..
+make -j4
 ```
 
 To enable output from libcircle (including fatal errors), run configure with
@@ -26,15 +24,8 @@ To enable output from libcircle (including fatal errors), run configure with
 * "4" info messages on internal operations and lower log levels.
 * "5" fine grained debug messages and lower log levels.
 
-RPM Build and Install
----------------------
-To build an RPM, use the following instructions:
+## Developer API Information
 
-1. ```rpmbuild -ta libcircle-<version>.tar.gz```
-2. ```rpm --install <the appropriate RPM files>```
-
-Developer API Information
--------------------------
 The basic program flow when using libcircle is the following:
 
 1. Define callbacks which enqueue or dequeue strings from the queue.
@@ -113,8 +104,8 @@ CIRCLE_begin();
 CIRCLE_finalize();
 ```
 
-Options
--------
+## Options
+
 The following bit flags can be OR'ed together and passed as the third
 parameter to CIRCLE_init or at anytime through CIRCLE_set_options before
 calling CIRCLE_begin:
@@ -124,8 +115,8 @@ calling CIRCLE_begin:
 * CIRCLE_CREATE_GLOBAL - invoke create callback on all processes, instead of just the rank 0 process
 * CIRCLE_TERM_TREE - use tree-based termination detection, instead of ring-based token passing
 
-Reductions
-----------
+## Reductions
+
 When enabled, libcircle periodically executes a global,
 user-defined reduction operation based on a time specified by the user.
 A final reduction executes after the work loop terminates.
