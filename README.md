@@ -1,4 +1,4 @@
-# libcircle (CMake port)
+# LibCircle (CMake version)
 
 LibCircle: deploy efficient cluster map-reduce tasks without explicit use of MPI. LibCircle offers a simplified API for distributing embarrassingly parallel workloads among distributed-memory compute nodes. My means of LibCirlce, a client application avoids comprehensive MPI deployment, yet LibCircle uses MPI runtime internally. Distributed processing and reduction is organized with callback functions. LibCircle manages a queue of work items that are dynamically assigned to work processes. Details on the algorithms used may be found at <http://dl.acm.org/citation.cfm?id=2389114>.
 
