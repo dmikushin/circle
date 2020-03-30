@@ -26,6 +26,13 @@ To enable output from libcircle (including fatal errors), run configure with
 * "4" info messages on internal operations and lower log levels.
 * "5" fine grained debug messages and lower log levels.
 
+## Testing
+
+```
+mpirun -np 4 ./example
+mpirun -np 4 ./example_reduction
+```
+
 ## Examples
 
 The basic program flow when using libcircle is the following:
