@@ -46,3 +46,8 @@ target_include_directories(example PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_include_directories(example PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/filesystem/include)
 target_link_libraries(example ${PROJECT_NAME})
 
+add_executable(example_reduction "${CMAKE_CURRENT_SOURCE_DIR}/src/examples/example_reduction.cpp")
+target_include_directories(example_reduction PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_include_directories(example_reduction PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/filesystem/include)
+target_link_libraries(example_reduction ${PROJECT_NAME})
+

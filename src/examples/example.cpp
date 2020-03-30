@@ -35,9 +35,9 @@ static void my_create_some_work(CIRCLE_handle *handle)
 
 static size_t sztotal = 0;
 
-void store_in_database(size_t finished_work)
+static void store_in_database(size_t finished_work)
 {
-	sztotal += finished_work;
+    sztotal += finished_work;
 }
 
 /* An example of a process callback defined by your program. */
