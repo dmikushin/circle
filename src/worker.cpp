@@ -228,22 +228,6 @@ static void init_local_state(MPI_Comm comm, circle::state_st* local_state)
     return;
 }
 
-/* provides address of pointer, and if value of pointer is not NULL,
- * frees memory and sets pointer value to NULL */
-void circle::free(void* pptr)
-{
-    void** ptr = (void**) pptr;
-
-    if(ptr != NULL) {
-        if(*ptr != NULL) {
-            free(*ptr);
-            *ptr = NULL;
-        }
-    }
-
-    return;
-}
-
 /**
  * Free memory associated with state
  */
