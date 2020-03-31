@@ -61,16 +61,7 @@ int32_t circle::init(int argc, char* argv[], int user_options)
     circle::debug_stream = stdout;
     circle::debug_level = circle::LOG_FATAL;
 
-    /* initialize callback pointers */
-    INPUT_ST.create_cb      = NULL;
-    INPUT_ST.process_cb     = NULL;
-    INPUT_ST.reduce_init_cb = NULL;
-    INPUT_ST.reduce_op_cb   = NULL;
-    INPUT_ST.reduce_fini_cb = NULL;
-
-    /* initialize user reduction buffer */
-    INPUT_ST.reduce_buf      = NULL;
-    INPUT_ST.reduce_buf_size = 0;
+    memset(&INPUT_ST, 0, sizeof(INPUT_ST));
 
     /* initialize reduction period to 0 seconds
      * to disable reductions by default */
