@@ -15,16 +15,33 @@
 #define CIRCLE_MAX_STRING_LEN (4096)
 #endif
 
+namespace circle {
+
 /**
  * Run time flags for the behavior of splitting work.
  */
-#define CIRCLE_SPLIT_RANDOM     (1 << 0)              /* Split work randomly. */
-#define CIRCLE_SPLIT_EQUAL      (1 << 1)              /* Split work evenly */
-#define CIRCLE_CREATE_GLOBAL    (1 << 2)              /* Call create callback on all procs */
-#define CIRCLE_TERM_TREE        (1 << 3)              /* Use tree-based termination */
-#define CIRCLE_DEFAULT_FLAGS    CIRCLE_SPLIT_EQUAL    /* Default behavior is random work stealing */
+enum class RuntimeFlags : unsigned {
+    None         = 0,
+    SplitRandom  = 1 << 0,        /* Split work randomly. */
+    SplitEqual   = 1 << 1,        /* Split work evenly */
+    CreateGlobal = 1 << 2,        /* Call create callback on all procs */
+    TermTree     = 1 << 3,        /* Use tree-based termination */
+    DefaultFlags = SplitEqual,    /* Default behavior is random work stealing */
+};
 
-namespace circle {
+inline constexpr RuntimeFlags
+operator&(RuntimeFlags x, RuntimeFlags y)
+{
+    return static_cast<RuntimeFlags>
+        (static_cast<unsigned>(x) & static_cast<unsigned>(y));
+}
+
+inline constexpr RuntimeFlags
+operator|(RuntimeFlags x, RuntimeFlags y)
+{
+    return static_cast<RuntimeFlags>
+        (static_cast<unsigned>(x) | static_cast<unsigned>(y));
+}
 
 /**
  * The various logging levels that libcircle will output.
@@ -69,12 +86,12 @@ const char* backtrace(int skip);
  * Initialize internal state needed by libcircle. This should be called before
  * any other libcircle API call. This returns the MPI rank value.
  */
-int init(int argc, char* argv[], int options);
+int init(int argc, char* argv[], circle::RuntimeFlags options);
 
 /**
  * Change run time flags
  */
-void set_options(int options);
+void set_options(circle::RuntimeFlags options);
 
 /**
  * Change the width of the k-ary communication tree.

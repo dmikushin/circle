@@ -21,7 +21,7 @@ typedef struct input_st {
 
     MPI_Comm comm;
 
-    int options;
+    circle::RuntimeFlags options;
 
     /* width of internal communication k-ary tree */
     int tree_width;

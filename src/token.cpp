@@ -1479,7 +1479,7 @@ static void send_work_to_many(circle::internal_queue_t* qp, \
         MPI_Abort(st->comm, LIBCIRCLE_MPI_ERROR);
     }
 
-    if(INPUT_ST.options & CIRCLE_SPLIT_EQUAL) {
+    if((INPUT_ST.options & circle::RuntimeFlags::SplitEqual) != circle::RuntimeFlags::None) {
         /* split queue equally among ourself and all requestors */
         spread_counts(&sizes[0], num_ranks, qp->count);
     }

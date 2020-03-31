@@ -13,7 +13,7 @@ START_TEST
     int checkpoint_write_ret = -1;
     int checkpoint_read_ret = -1;
 
-    circle::init(0, NULL, CIRCLE_DEFAULT_FLAGS);
+    circle::init(0, NULL, circle::RuntimeDefaultFlags);
 
     circle::internal_queue_t* out_q;
     out_q = circle::internal_queue_init();
@@ -26,7 +26,7 @@ START_TEST
     circle::internal_queue_free(out_q);
     circle::finalize();
 
-    circle::init(0, NULL, CIRCLE_DEFAULT_FLAGS);
+    circle::init(0, NULL, circle::RuntimeDefaultFlags);
     circle::internal_queue_t* in_q;
     in_q = circle::internal_queue_init();
 

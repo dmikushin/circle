@@ -1,5 +1,7 @@
 #include <check.h>
 #include <stdlib.h>
+#include <string>
+
 #include "libcircle.hpp"
 #include "queue.hpp"
 
@@ -9,7 +11,7 @@ START_TEST
     int free_result = -1;
 
     circle::internal_queue_t* q;
-    circle::init(0, NULL, CIRCLE_DEFAULT_FLAGS);
+    circle::init(0, NULL, circle::RuntimeDefaultFlags);
 
     q = circle::internal_queue_init();
     fail_if(q == NULL, "Initializing a queue failed.");
@@ -25,18 +27,16 @@ START_TEST
 (test_queue_pop_empty)
 {
     int free_result = -1;
-    char result[CIRCLE_MAX_STRING_LEN];
-
-    memset(&result, 0, sizeof(char) * CIRCLE_MAX_STRING_LEN);
+    std::vector<uint8_t> result;
 
     circle::internal_queue_t* q;
-    circle::init(0, NULL, CIRCLE_DEFAULT_FLAGS);
+    circle::init(0, NULL, circle::RuntimeDefaultFlags);
 
     q = circle::internal_queue_init();
     fail_if(q == NULL, "Initializing a queue failed.");
 
     circle::internal_queue_pop(q, result);
-    fail_if(strlen(result) > 0, \
+    fail_if(result.size() > 0, \
             "Something was poped from an empty queue.");
 
     free_result = circle::internal_queue_free(q);
@@ -50,16 +50,16 @@ START_TEST
 (test_queue_single_push_pop)
 {
     int free_result = -1;
-    const char* test_string = "Here's a test string!";
-    char result[CIRCLE_MAX_STRING_LEN];
+    const std::string test_string = "Here's a test string!";
+    std::vector<uint8_t> result;
 
     circle::internal_queue_t* q;
-    circle::init(0, NULL, CIRCLE_DEFAULT_FLAGS);
+    circle::init(0, NULL, circle::RuntimeDefaultFlags);
 
     q = circle::internal_queue_init();
     fail_if(q == NULL, "Initializing a queue failed.");
 
-    circle::internal_queue_push(q, test_string);
+    circle::internal_queue_push(q, std::vector<uint8_t>(test_string.begin(), test_string.end()));
     fail_unless(q->count == 1, \
                 "Queue count was not correct after a single push.");
 
@@ -81,22 +81,23 @@ START_TEST
 (test_queue_multiple_push_pop)
 {
     int free_result = -1;
-    char result[CIRCLE_MAX_STRING_LEN];
+    std::vector<uint8_t> result;
 
-    const char** test_strings = (const char**) malloc(sizeof(const char*) * 10);
-    test_strings[0] = "first test string";
-    test_strings[1] = "second test string";
-    test_strings[2] = "third test string";
-    test_strings[3] = "fourth test string";
-    test_strings[4] = "fifth test string";
-    test_strings[5] = "sixth test string";
-    test_strings[6] = "seventh test string";
-    test_strings[7] = "eighth test string";
-    test_strings[8] = "nineth test string";
-    test_strings[9] = "tenth test string";
+    const std::string test_strings[] = {
+        "first test string",
+        "second test string",
+        "third test string",
+        "fourth test string",
+        "fifth test string",
+        "sixth test string",
+        "seventh test string",
+        "eighth test string",
+        "nineth test string",
+        "tenth test string"
+    };
 
     circle::internal_queue_t* q;
-    circle::init(0, NULL, CIRCLE_DEFAULT_FLAGS);
+    circle::init(0, NULL, circle::RuntimeDefaultFlags);
 
     q = circle::internal_queue_init();
     fail_unless(q != NULL, "Initializing a queue failed.");

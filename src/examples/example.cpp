@@ -67,7 +67,7 @@ int main(int argc, char* argv[])
      * argv is the argument vector. The return value is the MPI rank of the current
      * process.
      */
-    int rank = circle::init(argc, argv, CIRCLE_DEFAULT_FLAGS);
+    int rank = circle::init(argc, argv, circle::RuntimeFlags::DefaultFlags);
 
     circle::enable_logging(circle::LOG_INFO);
 

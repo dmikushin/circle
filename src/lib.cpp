@@ -56,7 +56,7 @@ circle::handle* circle::get_handle()
  *
  * @return the rank value of the current process.
  */
-int32_t circle::init(int argc, char* argv[], int user_options)
+int32_t circle::init(int argc, char* argv[], circle::RuntimeFlags user_options)
 {
     circle::debug_stream = stdout;
     circle::debug_level = circle::LOG_FATAL;
@@ -123,7 +123,7 @@ void circle::cb_create(circle::cb func)
 /**
  * Change run time flags
  */
-void circle::set_options(int user_options)
+void circle::set_options(circle::RuntimeFlags user_options)
 {
     INPUT_ST.options = user_options;
     LOG(circle::LOG_DBG, "Circle options set: %X", user_options);

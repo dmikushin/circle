@@ -171,7 +171,7 @@ static void init_local_state(MPI_Comm comm, circle::state_st* local_state)
     /* determine whether we are using tree-based or circle-based
      * termination detection */
     local_state->term_tree_enabled = 0;
-    if(INPUT_ST.options & CIRCLE_TERM_TREE) {
+    if((INPUT_ST.options & circle::RuntimeFlags::TermTree) != circle::RuntimeFlags::None) {
         local_state->term_tree_enabled = 1;
     }
 
@@ -468,22 +468,22 @@ int8_t circle::worker()
     MPI_Comm_set_errhandler(comm, circle_err);
 
     /* print settings of some runtime tunables */
-    if(INPUT_ST.options & CIRCLE_SPLIT_EQUAL) {
+    if((INPUT_ST.options & circle::RuntimeFlags::SplitEqual) != circle::RuntimeFlags::None) {
         LOG(circle::LOG_DBG, "Using equalized load splitting.");
     }
 
-    if(INPUT_ST.options & CIRCLE_SPLIT_RANDOM) {
+    if((INPUT_ST.options & circle::RuntimeFlags::SplitRandom) != circle::RuntimeFlags::None) {
         LOG(circle::LOG_DBG, "Using randomized load splitting.");
     }
 
-    if(INPUT_ST.options & CIRCLE_CREATE_GLOBAL) {
+    if((INPUT_ST.options & circle::RuntimeFlags::CreateGlobal) != circle::RuntimeFlags::None) {
         LOG(circle::LOG_DBG, "Create callback enabled on all ranks.");
     }
     else {
         LOG(circle::LOG_DBG, "Create callback enabled on rank 0 only.");
     }
 
-    if(INPUT_ST.options & CIRCLE_TERM_TREE) {
+    if((INPUT_ST.options & circle::RuntimeFlags::TermTree) != circle::RuntimeFlags::None) {
         LOG(circle::LOG_DBG, "Using tree termination detection.");
     }
     else {
@@ -499,7 +499,7 @@ int8_t circle::worker()
 
     /* add initial work to queues by calling create_cb,
      * only invoke on master unless CREATE_GLOBAL is set */
-    if(rank == 0 || INPUT_ST.options & CIRCLE_CREATE_GLOBAL) {
+    if(rank == 0 || (INPUT_ST.options & circle::RuntimeFlags::CreateGlobal) != circle::RuntimeFlags::None) {
         (*(INPUT_ST.create_cb))(&queue_handle);
     }
 
