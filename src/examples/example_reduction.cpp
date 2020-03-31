@@ -105,8 +105,9 @@ static void my_create_some_work(circle::handle *handle)
                 if (!fs::exists(i->status()) || !fs::is_regular_file(i->status()))
                         continue;
 
-                const char* filename = i->path().string().c_str();
-                handle->enqueue(filename);
+		const string filename = i->path().string();
+		const char* cfilename = filename.c_str();
+		handle->enqueue(cfilename);
         }
     }
 }
@@ -126,6 +127,7 @@ static void my_process_some_work(circle::handle *handle)
      * as little as possible.
      */
     char my_data[1024];
+    my_data[0] = '\0';
     handle->dequeue(my_data);
 
     size_t finished_work = fs::file_size(my_data);
