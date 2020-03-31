@@ -21,7 +21,6 @@ endif()
 string(TOUPPER ${CMAKE_BUILD_TYPE} CMAKE_BUILD_TYPE_UPPER)
 
 file(GLOB SRCS
-	"${CMAKE_CURRENT_SOURCE_DIR}/src/*.c"
 	"${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp"
 	"${CMAKE_CURRENT_SOURCE_DIR}/src/*.f90")
 
@@ -30,13 +29,13 @@ target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/i
 target_include_directories(${PROJECT_NAME} PRIVATE ${MPI_Fortran_INCLUDE_PATH})
 target_link_libraries(${PROJECT_NAME} ${MPI_C_LIBRARIES})
 
-add_executable(check_checkpoint "${CMAKE_CURRENT_SOURCE_DIR}/src/tests/check_checkpoint.c")
+add_executable(check_checkpoint "${CMAKE_CURRENT_SOURCE_DIR}/src/tests/check_checkpoint.cpp")
 target_include_directories(check_checkpoint PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_include_directories(check_checkpoint PRIVATE ${CHECK_INCLUDE_DIRS})
 target_link_libraries(check_checkpoint ${PROJECT_NAME} ${CHECK_LIBRARIES})
 target_link_directories(check_checkpoint PRIVATE ${CHECK_LIBRARY_DIRS})
 
-add_executable(check_queue "${CMAKE_CURRENT_SOURCE_DIR}/src/tests/check_queue.c")
+add_executable(check_queue "${CMAKE_CURRENT_SOURCE_DIR}/src/tests/check_queue.cpp")
 target_include_directories(check_queue PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_include_directories(check_queue PRIVATE ${CHECK_INCLUDE_DIRS})
 target_link_libraries(check_queue ${PROJECT_NAME} ${CHECK_LIBRARIES})

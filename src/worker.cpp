@@ -14,16 +14,25 @@
 #include <netdb.h>
 #include <mpi.h>
 
-#include "log.h"
-#include "libcircle.h"
-#include "token.h"
-#include "lib.h"
-#include "worker.h"
+#include "log.hpp"
+#include "libcircle.hpp"
+#include "token.hpp"
+#include "lib.hpp"
+#include "worker.hpp"
 
-CIRCLE_handle queue_handle;
+namespace circle {
+namespace impl {
 
-extern CIRCLE_input_st CIRCLE_INPUT_ST;
-int8_t CIRCLE_ABORT_FLAG = 0;
+int8_t ABORT_FLAG;
+
+extern circle::input_st INPUT_ST;
+
+} // namespace impl
+} // namespace circle
+
+using namespace circle::impl;
+
+circle::handle queue_handle;
 
 /*
  * Define as described in gethostent(3) for backwards compatibility.
@@ -32,7 +41,7 @@ int8_t CIRCLE_ABORT_FLAG = 0;
 #define h_addr h_addr_list[0]
 #endif /* h_addr */
 
-const char* CIRCLE_backtrace(int skip);
+const char* circle::backtrace(int skip);
 
 /**
  * @brief Function to be called in the event of an MPI error.
@@ -42,27 +51,27 @@ const char* CIRCLE_backtrace(int skip);
  * to checkpoint.
  */
 #pragma GCC diagnostic ignored "-Wunused-parameter"
-static void CIRCLE_MPI_error_handler(MPI_Comm* comm, int* err, ...)
+static void MPI_error_handler(MPI_Comm* comm, int* err, ...)
 {
-    const char* backtrace = CIRCLE_backtrace(1);
+    const char* backtrace = circle::backtrace(1);
 
     char name[MPI_MAX_OBJECT_NAME];
     int namelen;
     MPI_Comm_get_name(*comm, name, &namelen);
 
     if(*err == LIBCIRCLE_MPI_ERROR) {
-        LOG(CIRCLE_LOG_ERR, "Libcircle received abort signal, checkpointing.");
+        LOG(circle::LOG_ERR, "Libcircle received abort signal, checkpointing.");
     }
     else {
         char error[MPI_MAX_ERROR_STRING];
         int error_len = 0;
         MPI_Error_string(*err, error, &error_len);
-        LOG(CIRCLE_LOG_ERR, "MPI Error in Comm [%s]: %s", name, error);
-	LOG(CIRCLE_LOG_ERR, "Backtrace:\n%s\n", backtrace);
-        LOG(CIRCLE_LOG_ERR, "Libcircle received MPI error, checkpointing.");
+        LOG(circle::LOG_ERR, "MPI Error in Comm [%s]: %s", name, error);
+	LOG(circle::LOG_ERR, "Backtrace:\n%s\n", backtrace);
+        LOG(circle::LOG_ERR, "Libcircle received MPI error, checkpointing.");
     }
 
-    CIRCLE_checkpoint();
+    circle::checkpoint();
     exit(EXIT_FAILURE);
 }
 #pragma GCC diagnostic warning "-Wunused-parameter"
@@ -71,49 +80,50 @@ static void CIRCLE_MPI_error_handler(MPI_Comm* comm, int* err, ...)
  * Wrapper for pushing an element on the queue
  *
  */
-static int8_t CIRCLE_enqueue(const char* element)
+static int8_t enqueue(const char* element)
 {
-    return CIRCLE_internal_queue_push(CIRCLE_INPUT_ST.queue, element);
+    return circle::internal_queue_push(INPUT_ST.queue, element);
 }
 
 /**
  * Wrapper for popping an element
  */
-static int8_t CIRCLE_dequeue(char* element)
+static int8_t dequeue(char* element)
 {
-    return CIRCLE_internal_queue_pop(CIRCLE_INPUT_ST.queue, element);
+    return circle::internal_queue_pop(INPUT_ST.queue, element);
 }
 
 /**
  * Wrapper for getting the local queue size
  */
-static uint32_t CIRCLE_local_queue_size(void)
+static uint32_t local_queue_size(void)
 {
-    return (uint32_t)CIRCLE_INPUT_ST.queue->count;
+    return (uint32_t)INPUT_ST.queue->count;
 }
 
 /**
- * Wrapper for reading in restart files
+ * Call this function to read in libcircle restart files.
  */
-int8_t _CIRCLE_read_restarts(void)
+int8_t circle::read_restarts(void)
 {
-    return CIRCLE_internal_queue_read(CIRCLE_INPUT_ST.queue, \
-                                      CIRCLE_global_rank);
+    return circle::internal_queue_read(INPUT_ST.queue, \
+                                      circle::global_rank);
 }
 
 /**
- * Wrapper for checkpointing
+ * Call this function to read in libcircle restart files.  Each rank
+ * writes a file called circle<rank>.txt
  */
-int8_t _CIRCLE_checkpoint(void)
+int8_t circle::checkpoint(void)
 {
-    return CIRCLE_internal_queue_write(CIRCLE_INPUT_ST.queue, \
-                                       CIRCLE_global_rank);
+    return circle::internal_queue_write(INPUT_ST.queue, \
+                                       circle::global_rank);
 }
 
 /**
  * Initializes all variables local to a rank
  */
-static void CIRCLE_init_local_state(MPI_Comm comm, CIRCLE_state_st* local_state)
+static void init_local_state(MPI_Comm comm, circle::state_st* local_state)
 {
     /* get our rank and number of ranks in communicator */
     int rank, size;
@@ -121,7 +131,7 @@ static void CIRCLE_init_local_state(MPI_Comm comm, CIRCLE_state_st* local_state)
     MPI_Comm_size(comm, &size);
 
     /* set rank and size in state */
-    local_state->comm = CIRCLE_INPUT_ST.comm;
+    local_state->comm = INPUT_ST.comm;
     local_state->rank = rank;
     local_state->size = size;
 
@@ -137,12 +147,12 @@ static void CIRCLE_init_local_state(MPI_Comm comm, CIRCLE_state_st* local_state)
     local_state->token_dest = (rank + 1 + size) % size;
 
     /* initialize token state */
-    local_state->token_proc     = WHITE;
-    local_state->token_buf      = BLACK;
+    local_state->token_proc     = circle::WHITE;
+    local_state->token_buf      = circle::BLACK;
     local_state->token_send_req = MPI_REQUEST_NULL;
 
     /* allocate memory for our offset arrays */
-    int32_t offsets = CIRCLE_INPUT_ST.queue->str_count;
+    int32_t offsets = INPUT_ST.queue->str_count;
     local_state->offsets_count = offsets;
     local_state->offsets_send_buf = (int*) calloc((size_t)offsets, sizeof(int));
     local_state->offsets_recv_buf = (int*) calloc((size_t)offsets, sizeof(int));
@@ -153,7 +163,7 @@ static void CIRCLE_init_local_state(MPI_Comm comm, CIRCLE_state_st* local_state)
 
     /* randomize the first task we request work from */
     local_state->seed = (unsigned) rank;
-    CIRCLE_get_next_proc(local_state);
+    circle::get_next_proc(local_state);
 
     /* initialize work request state */
     local_state->work_requested = 0;
@@ -161,17 +171,17 @@ static void CIRCLE_init_local_state(MPI_Comm comm, CIRCLE_state_st* local_state)
     /* determine whether we are using tree-based or circle-based
      * termination detection */
     local_state->term_tree_enabled = 0;
-    if(CIRCLE_INPUT_ST.options & CIRCLE_TERM_TREE) {
+    if(INPUT_ST.options & CIRCLE_TERM_TREE) {
         local_state->term_tree_enabled = 1;
     }
 
     /* create our collective tree */
-    int tree_width = CIRCLE_INPUT_ST.tree_width;
-    CIRCLE_tree_init(rank, size, tree_width, local_state->comm, &local_state->tree);
+    int tree_width = INPUT_ST.tree_width;
+    circle::tree_init(rank, size, tree_width, local_state->comm, &local_state->tree);
 
     /* init state for progress reduction operations */
     local_state->reduce_enabled = 0;
-    double secs = (double) CIRCLE_INPUT_ST.reduce_period;
+    double secs = (double) INPUT_ST.reduce_period;
     if(secs > 0.0) {
         local_state->reduce_enabled = 1;
     }
@@ -220,7 +230,7 @@ static void CIRCLE_init_local_state(MPI_Comm comm, CIRCLE_state_st* local_state)
 
 /* provides address of pointer, and if value of pointer is not NULL,
  * frees memory and sets pointer value to NULL */
-void CIRCLE_free(void* pptr)
+void circle::free(void* pptr)
 {
     void** ptr = (void**) pptr;
 
@@ -237,13 +247,13 @@ void CIRCLE_free(void* pptr)
 /**
  * Free memory associated with state
  */
-static void CIRCLE_finalize_local_state(CIRCLE_state_st* local_state)
+static void finalize_local_state(circle::state_st* local_state)
 {
-    CIRCLE_tree_free(&local_state->tree);
-    CIRCLE_free(&local_state->abort_req);
-    CIRCLE_free(&local_state->offsets_send_buf);
-    CIRCLE_free(&local_state->offsets_recv_buf);
-    CIRCLE_free(&local_state->requestors);
+    circle::tree_free(&local_state->tree);
+    circle::free(&local_state->abort_req);
+    circle::free(&local_state->offsets_send_buf);
+    circle::free(&local_state->offsets_recv_buf);
+    circle::free(&local_state->requestors);
     return;
 }
 
@@ -259,35 +269,35 @@ static void CIRCLE_finalize_local_state(CIRCLE_state_st* local_state)
  *     -# If after requesting work, this rank still doesn't have any,
  *        check for termination conditions.
  */
-static void CIRCLE_work_loop(CIRCLE_state_st* sptr, CIRCLE_handle* q_handle)
+static void work_loop(circle::state_st* sptr, circle::handle* q_handle)
 {
     int cleanup = 0;
 
     /* Loop until done, we break on normal termination or abort */
     while(1) {
         /* Check for and service work requests */
-        CIRCLE_workreq_check(CIRCLE_INPUT_ST.queue, sptr, cleanup);
+        circle::workreq_check(INPUT_ST.queue, sptr, cleanup);
 
         /* process any incoming work receipt messages */
-        CIRCLE_workreceipt_check(CIRCLE_INPUT_ST.queue, sptr);
+        circle::workreceipt_check(INPUT_ST.queue, sptr);
 
         /* check for incoming abort messages */
-        CIRCLE_abort_check(sptr, cleanup);
+        circle::abort_check(sptr, cleanup);
 
         /* Make progress on any outstanding reduction */
         if(sptr->reduce_enabled) {
-            CIRCLE_reduce_check(sptr, sptr->local_objects_processed, cleanup);
+            circle::reduce_check(sptr, sptr->local_objects_processed, cleanup);
         }
 
         /* If I have no work, request work from another rank */
-        if(CIRCLE_INPUT_ST.queue->count == 0) {
-            CIRCLE_request_work(CIRCLE_INPUT_ST.queue, sptr, cleanup);
+        if(INPUT_ST.queue->count == 0) {
+            circle::request_work(INPUT_ST.queue, sptr, cleanup);
         }
 
         /* If I have some work and have not received a signal to
          * abort, process one work item */
-        if(CIRCLE_INPUT_ST.queue->count > 0 && !CIRCLE_ABORT_FLAG) {
-            (*(CIRCLE_INPUT_ST.process_cb))(q_handle);
+        if(INPUT_ST.queue->count > 0 && !ABORT_FLAG) {
+            (*(INPUT_ST.process_cb))(q_handle);
             sptr->local_objects_processed++;
         }
         /* If I don't have work, or if I received signal to abort,
@@ -296,15 +306,15 @@ static void CIRCLE_work_loop(CIRCLE_state_st* sptr, CIRCLE_handle* q_handle)
             /* check whether we have terminated */
             int term_status;
             if (sptr->term_tree_enabled) {
-                term_status = CIRCLE_check_for_term_allreduce(sptr);
+                term_status = circle::check_for_term_allreduce(sptr);
             }
             else {
-                term_status = CIRCLE_check_for_term(sptr);
+                term_status = circle::check_for_term(sptr);
             }
 
-            if(term_status == TERMINATE) {
+            if(term_status == circle::TERMINATE) {
                 /* got the terminate signal, break the loop */
-                LOG(CIRCLE_LOG_DBG, "Received termination signal.");
+                LOG(circle::LOG_DBG, "Received termination signal.");
                 break;
             }
         }
@@ -387,33 +397,33 @@ static void CIRCLE_work_loop(CIRCLE_state_st* sptr, CIRCLE_handle* q_handle)
            ! sptr->abort_outstanding  &&
            sptr->token_send_req == MPI_REQUEST_NULL)
         {
-            CIRCLE_barrier_start(sptr);
+            circle::barrier_start(sptr);
         }
 
         /* break the loop when the non-blocking barrier completes */
-        if(CIRCLE_barrier_test(sptr)) {
+        if(circle::barrier_test(sptr)) {
             break;
         }
 
         /* send no work message for any work request that comes in */
-        CIRCLE_workreq_check(CIRCLE_INPUT_ST.queue, sptr, cleanup);
+        circle::workreq_check(INPUT_ST.queue, sptr, cleanup);
 
         /* cleanup any outstanding reduction */
         if(sptr->reduce_enabled) {
-            CIRCLE_reduce_check(sptr, sptr->local_objects_processed, cleanup);
+            circle::reduce_check(sptr, sptr->local_objects_processed, cleanup);
         }
 
         /* receive any incoming work reply messages */
-        CIRCLE_request_work(CIRCLE_INPUT_ST.queue, sptr, cleanup);
+        circle::request_work(INPUT_ST.queue, sptr, cleanup);
 
         /* drain any outstanding abort messages */
-        CIRCLE_abort_check(sptr, cleanup);
+        circle::abort_check(sptr, cleanup);
 
         /* if we're using circle-based token passing, drain any
          * messages still outstanding */
         if(! sptr->term_tree_enabled) {
             /* check for and receive any incoming token */
-            CIRCLE_token_check(sptr);
+            circle::token_check(sptr);
 
             /* if we have an outstanding token, check whether it's been received */
             if(sptr->token_send_req != MPI_REQUEST_NULL) {
@@ -427,12 +437,12 @@ static void CIRCLE_work_loop(CIRCLE_state_st* sptr, CIRCLE_handle* q_handle)
     /* execute final, synchronous reduction if enabled, this ensures
      * that we fire at least one reduce and one with the final result */
     if(sptr->reduce_enabled) {
-        CIRCLE_reduce_sync(sptr, sptr->local_objects_processed);
+        circle::reduce_sync(sptr, sptr->local_objects_processed);
     }
 
     /* if any process is in the abort state,
      * set all to be in the abort state */
-    CIRCLE_abort_reduce(sptr);
+    circle::abort_reduce(sptr);
 
     return;
 }
@@ -444,21 +454,21 @@ static void CIRCLE_work_loop(CIRCLE_state_st* sptr, CIRCLE_handle* q_handle)
  *     -# Initializes MPI
  *     -# Initializes internal libcircle data structures
  *     -# Calls libcircle's main work loop function.
- *     -# Checkpoints if CIRCLE_abort has been called by a rank.
+ *     -# Checkpoints if circle::abort has been called by a rank.
  */
-int8_t CIRCLE_worker()
+int8_t circle::worker()
 {
     /* Holds all worker state */
-    CIRCLE_state_st local_state;
-    CIRCLE_state_st* sptr = &local_state;
+    circle::state_st local_state;
+    circle::state_st* sptr = &local_state;
 
     /* Provides an interface to the queue. */
-    queue_handle.enqueue = &CIRCLE_enqueue;
-    queue_handle.dequeue = &CIRCLE_dequeue;
-    queue_handle.local_queue_size = &CIRCLE_local_queue_size;
+    queue_handle.enqueue = &enqueue;
+    queue_handle.dequeue = &dequeue;
+    queue_handle.local_queue_size = &local_queue_size;
 
     /* get MPI communicator */
-    MPI_Comm comm = CIRCLE_INPUT_ST.comm;
+    MPI_Comm comm = INPUT_ST.comm;
 
     /* get our rank and the size of the communicator */
     int rank, size;
@@ -466,38 +476,38 @@ int8_t CIRCLE_worker()
     MPI_Comm_size(comm, &size);
 
     /* initialize all local state variables */
-    CIRCLE_init_local_state(comm, sptr);
+    init_local_state(comm, sptr);
 
     /* setup an MPI error handler */
     MPI_Errhandler circle_err;
-    MPI_Comm_create_errhandler(CIRCLE_MPI_error_handler, &circle_err);
+    MPI_Comm_create_errhandler(MPI_error_handler, &circle_err);
     MPI_Comm_set_errhandler(comm, circle_err);
 
     /* print settings of some runtime tunables */
-    if(CIRCLE_INPUT_ST.options & CIRCLE_SPLIT_EQUAL) {
-        LOG(CIRCLE_LOG_DBG, "Using equalized load splitting.");
+    if(INPUT_ST.options & CIRCLE_SPLIT_EQUAL) {
+        LOG(circle::LOG_DBG, "Using equalized load splitting.");
     }
 
-    if(CIRCLE_INPUT_ST.options & CIRCLE_SPLIT_RANDOM) {
-        LOG(CIRCLE_LOG_DBG, "Using randomized load splitting.");
+    if(INPUT_ST.options & CIRCLE_SPLIT_RANDOM) {
+        LOG(circle::LOG_DBG, "Using randomized load splitting.");
     }
 
-    if(CIRCLE_INPUT_ST.options & CIRCLE_CREATE_GLOBAL) {
-        LOG(CIRCLE_LOG_DBG, "Create callback enabled on all ranks.");
+    if(INPUT_ST.options & CIRCLE_CREATE_GLOBAL) {
+        LOG(circle::LOG_DBG, "Create callback enabled on all ranks.");
     }
     else {
-        LOG(CIRCLE_LOG_DBG, "Create callback enabled on rank 0 only.");
+        LOG(circle::LOG_DBG, "Create callback enabled on rank 0 only.");
     }
 
-    if(CIRCLE_INPUT_ST.options & CIRCLE_TERM_TREE) {
-        LOG(CIRCLE_LOG_DBG, "Using tree termination detection.");
+    if(INPUT_ST.options & CIRCLE_TERM_TREE) {
+        LOG(circle::LOG_DBG, "Using tree termination detection.");
     }
     else {
-        LOG(CIRCLE_LOG_DBG, "Using circle termination detection.");
+        LOG(circle::LOG_DBG, "Using circle termination detection.");
     }
 
-    LOG(CIRCLE_LOG_DBG, "Tree width: %d", CIRCLE_INPUT_ST.tree_width);
-    LOG(CIRCLE_LOG_DBG, "Reduce period (secs): %d", CIRCLE_INPUT_ST.reduce_period);
+    LOG(circle::LOG_DBG, "Tree width: %d", INPUT_ST.tree_width);
+    LOG(circle::LOG_DBG, "Reduce period (secs): %d", INPUT_ST.reduce_period);
 
     /**********************************
      * this is where the heavy lifting is done
@@ -505,17 +515,17 @@ int8_t CIRCLE_worker()
 
     /* add initial work to queues by calling create_cb,
      * only invoke on master unless CREATE_GLOBAL is set */
-    if(rank == 0 || CIRCLE_INPUT_ST.options & CIRCLE_CREATE_GLOBAL) {
-        (*(CIRCLE_INPUT_ST.create_cb))(&queue_handle);
+    if(rank == 0 || INPUT_ST.options & CIRCLE_CREATE_GLOBAL) {
+        (*(INPUT_ST.create_cb))(&queue_handle);
     }
 
     /* work until we get a terminate message */
-    CIRCLE_work_loop(sptr, &queue_handle);
+    work_loop(sptr, &queue_handle);
 
     /* we may have dropped out early from an abort signal,
      * in which case we should checkpoint here */
-    if(CIRCLE_ABORT_FLAG) {
-        CIRCLE_checkpoint();
+    if(ABORT_FLAG) {
+        circle::checkpoint();
     }
 
     /**********************************
@@ -523,7 +533,7 @@ int8_t CIRCLE_worker()
      **********************************/
 
     /* optionally print summary info */
-    if (CIRCLE_debug_level >= CIRCLE_LOG_INFO) {
+    if (circle::debug_level >= circle::LOG_INFO) {
         /* allocate memory for summary data */
         size_t array_elems = (size_t) size;
         uint32_t* total_objects_processed_array = (uint32_t*) calloc(array_elems, sizeof(uint32_t));
@@ -549,22 +559,22 @@ int8_t CIRCLE_worker()
         if(rank == 0) {
             int i;
             for(i = 0; i < size; i++) {
-                LOG(CIRCLE_LOG_INFO, "Rank %d\tObjects Processed %d\t%0.3lf%%", i,
+                LOG(circle::LOG_INFO, "Rank %d\tObjects Processed %d\t%0.3lf%%", i,
                     total_objects_processed_array[i],
                     (double)total_objects_processed_array[i] /
                     (double)total_objects_processed * 100.0);
-                LOG(CIRCLE_LOG_INFO, "Rank %d\tWork requests: %d", i, total_work_requests_array[i]);
-                LOG(CIRCLE_LOG_INFO, "Rank %d\tNo work replies: %d", i, total_no_work_received_array[i]);
+                LOG(circle::LOG_INFO, "Rank %d\tWork requests: %d", i, total_work_requests_array[i]);
+                LOG(circle::LOG_INFO, "Rank %d\tNo work replies: %d", i, total_no_work_received_array[i]);
             }
 
-            LOG(CIRCLE_LOG_INFO,
+            LOG(circle::LOG_INFO,
                 "Total Objects Processed: %d", total_objects_processed);
         }
 
         /* free memory */
-        CIRCLE_free(&total_no_work_received_array);
-        CIRCLE_free(&total_work_requests_array);
-        CIRCLE_free(&total_objects_processed_array);
+        circle::free(&total_no_work_received_array);
+        circle::free(&total_work_requests_array);
+        circle::free(&total_objects_processed_array);
     }
 
     /* restore original error handler and free our custom one */
@@ -572,7 +582,7 @@ int8_t CIRCLE_worker()
     MPI_Errhandler_free(&circle_err);
 
     /* free memory */
-    CIRCLE_finalize_local_state(sptr);
+    finalize_local_state(sptr);
 
     return 0;
 }

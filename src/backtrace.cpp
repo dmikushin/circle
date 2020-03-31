@@ -7,13 +7,17 @@
 #include <sstream>
 #include <vector>
 
-// A C++ function that will produce a stack trace with demangled function and method names.
-extern "C" const char* CIRCLE_backtrace(int skip)
+#include "libcircle.hpp"
+
+/**
+ *  Produce a stack trace with demangled function and method names.
+ */
+const char* circle::backtrace(int skip)
 {
 	void *callstack[128];
 	const int nMaxFrames = sizeof(callstack) / sizeof(callstack[0]);
 	char buf[1024];
-	int nFrames = backtrace(callstack, nMaxFrames);
+	int nFrames = ::backtrace(callstack, nMaxFrames);
 
 	std::ostringstream trace_buf;
 	for (int i = skip; i < nFrames; i++) {

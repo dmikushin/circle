@@ -1,12 +1,12 @@
 #include <iostream>
-#include <libcircle.h>
+#include <libcircle.hpp>
 #include <ghc/filesystem.hpp>
 
 namespace fs = ghc::filesystem;
 using namespace std;
 
 /* An example of a create callback defined by your program */
-static void my_create_some_work(CIRCLE_handle *handle)
+static void my_create_some_work(circle::handle *handle)
 {
     /*
      * This is where you should generate work that needs to be processed.
@@ -14,8 +14,8 @@ static void my_create_some_work(CIRCLE_handle *handle)
      * this is where you would read directory and and enqueue directory names.
      *
      * By default, the create callback is only executed on the root
-     * process, i.e., the process whose call to CIRCLE_init returns 0.
-     * If the CIRCLE_CREATE_GLOBAL option flag is specified, the create
+     * process, i.e., the process whose call to circle::init returns 0.
+     * If the circle::CREATE_GLOBAL option flag is specified, the create
      * callback is invoked on all processes.
      */
 
@@ -41,7 +41,7 @@ static void store_in_database(size_t finished_work)
 }
 
 /* An example of a process callback defined by your program. */
-static void my_process_some_work(CIRCLE_handle *handle)
+static void my_process_some_work(circle::handle *handle)
 {
     /*
      * This is where work should be processed. For example, this is where you
@@ -65,32 +65,32 @@ int main(int argc, char* argv[])
      * argv is the argument vector. The return value is the MPI rank of the current
      * process.
      */
-    int rank = CIRCLE_init(argc, argv, CIRCLE_DEFAULT_FLAGS);
+    int rank = circle::init(argc, argv, CIRCLE_DEFAULT_FLAGS);
 
-    CIRCLE_enable_logging(CIRCLE_LOG_INFO);
+    circle::enable_logging(circle::LOG_INFO);
 
     /*
      * Processing and creating work is done through callbacks. Here's how we tell
      * libcircle about our function which creates the initial work. For MPI nerds,
      * this is your rank 0 process.
      */
-    CIRCLE_cb_create(&my_create_some_work);
+    circle::cb_create(&my_create_some_work);
 
     /*
      * After you give libcircle a way to create work, you need to tell it how that
      * work should be processed.
      */
-    CIRCLE_cb_process(&my_process_some_work);
+    circle::cb_process(&my_process_some_work);
 
     /*
      * Now that everything is setup, lets execute everything.
      */
-    CIRCLE_begin();
+    circle::begin();
 
     /*
      * Finally, give libcircle a chance to clean up after itself.
      */
-    CIRCLE_finalize();
+    circle::finalize();
 
     cout << "Rank " << rank << " partial size = " << sztotal << endl;
 

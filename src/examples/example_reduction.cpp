@@ -1,5 +1,5 @@
 #include <iostream>
-#include <libcircle.h>
+#include <libcircle.hpp>
 #include <ghc/filesystem.hpp>
 
 namespace fs = ghc::filesystem;
@@ -13,9 +13,9 @@ static size_t sztotal_partial = 0;
  * operation.  One can specify an arbitrary block of data as input.
  * When a new reduction is started, libcircle invokes this callback on
  * each process to snapshot the memory block specified in the call to
- * CIRCLE_reduce.  The library makes a memcpy of the memory block, so
+ * circle::reduce.  The library makes a memcpy of the memory block, so
  * its contents can be safely changed or go out of scope after the call
- * to CIRCLE_reduce returns.
+ * to circle::reduce returns.
  */
 static void reduce_init(void)
 {
@@ -27,7 +27,7 @@ static void reduce_init(void)
      * In this example, we capture a single uint64_t value,
      * which is the global reduce_count variable.
      */
-    CIRCLE_reduce(&sztotal_partial, sizeof(size_t));
+    circle::reduce(&sztotal_partial, sizeof(size_t));
 }
 
 /*
@@ -36,10 +36,10 @@ static void reduce_init(void)
  * address and size of each data buffer are provided as input
  * parameters to the callback function.  An arbitrary reduction
  * operation can be executed.  Then libcircle snapshots the memory
- * block specified in the call to CIRCLE_reduce to capture the partial
+ * block specified in the call to circle::reduce to capture the partial
  * result.  The library makes a memcpy of the memory block, so its
  * contents can be safely changed or go out of scope after the call to
- * CIRCLE_reduce returns.
+ * circle::reduce returns.
  *
  * Note that the sizes of the input buffers do not have to be the same,
  * and the output buffer does not need to be the same size as either
@@ -54,15 +54,15 @@ static void reduce_op(const void* buf1, size_t size1, const void* buf2, size_t s
      * reduce_init, or they could be intermediate results copied from a
      * reduce_op call.  We can execute an arbitrary operation on these
      * input buffers and then we save the partial result to a call
-     * to CIRCLE_reduce.
+     * to circle::reduce.
      *
      * In this example, we sum two input uint64_t values and
-     * libcircle makes a copy of the result when we call CIRCLE_reduce.
+     * libcircle makes a copy of the result when we call circle::reduce.
      */
     uint64_t a = *(const uint64_t*) buf1;
     uint64_t b = *(const uint64_t*) buf2;
     uint64_t sum = a + b;
-    CIRCLE_reduce(&sum, sizeof(uint64_t));
+    circle::reduce(&sum, sizeof(uint64_t));
 }
 
 /*
@@ -84,7 +84,7 @@ static void reduce_fini(const void* buf, size_t size)
 }
 
 /* An example of a create callback defined by your program */
-static void my_create_some_work(CIRCLE_handle *handle)
+static void my_create_some_work(circle::handle *handle)
 {
     /*
      * This is where you should generate work that needs to be processed.
@@ -92,8 +92,8 @@ static void my_create_some_work(CIRCLE_handle *handle)
      * this is where you would read directory and and enqueue directory names.
      *
      * By default, the create callback is only executed on the root
-     * process, i.e., the process whose call to CIRCLE_init returns 0.
-     * If the CIRCLE_CREATE_GLOBAL option flag is specified, the create
+     * process, i.e., the process whose call to circle::init returns 0.
+     * If the circle::CREATE_GLOBAL option flag is specified, the create
      * callback is invoked on all processes.
      */
 
@@ -117,7 +117,7 @@ void store_in_database(size_t finished_work)
 }
 
 /* An example of a process callback defined by your program. */
-static void my_process_some_work(CIRCLE_handle *handle)
+static void my_process_some_work(circle::handle *handle)
 {
     /*
      * This is where work should be processed. For example, this is where you
@@ -138,26 +138,26 @@ int main(int argc, char* argv[])
     /*
      * Do partial computations with libcircle.
      */
-    int rank = CIRCLE_init(argc, argv, CIRCLE_DEFAULT_FLAGS);
-    CIRCLE_enable_logging(CIRCLE_LOG_INFO);
-    CIRCLE_cb_create(&my_create_some_work);
-    CIRCLE_cb_process(&my_process_some_work);
+    int rank = circle::init(argc, argv, CIRCLE_DEFAULT_FLAGS);
+    circle::enable_logging(circle::LOG_INFO);
+    circle::cb_create(&my_create_some_work);
+    circle::cb_process(&my_process_some_work);
 
     /*
      * Reduce the final result.
      */
-    CIRCLE_cb_reduce_init(&reduce_init);
-    CIRCLE_cb_reduce_op(&reduce_op);
-    CIRCLE_cb_reduce_fini(&reduce_fini);
+    circle::cb_reduce_init(&reduce_init);
+    circle::cb_reduce_op(&reduce_op);
+    circle::cb_reduce_fini(&reduce_fini);
 
     /*
      * Specify time period between consecutive reductions.
      * Here we set a time period of 10 seconds.
      */
-    CIRCLE_set_reduce_period(10);
+    circle::set_reduce_period(10);
 
-    CIRCLE_begin();
-    CIRCLE_finalize();
+    circle::begin();
+    circle::finalize();
 
     return 0;
 }

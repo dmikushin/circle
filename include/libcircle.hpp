@@ -4,11 +4,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-/* define a C interface */
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /**
  * The maximum length of a string value which is allowed to be placed on the
  * queue structure.
@@ -28,16 +23,18 @@ extern "C" {
 #define CIRCLE_TERM_TREE        (1 << 3)              /* Use tree-based termination */
 #define CIRCLE_DEFAULT_FLAGS    CIRCLE_SPLIT_EQUAL    /* Default behavior is random work stealing */
 
+namespace circle {
+
 /**
  * The various logging levels that libcircle will output.
  */
-typedef enum CIRCLE_loglevel {
-    CIRCLE_LOG_FATAL = 1,
-    CIRCLE_LOG_ERR   = 2,
-    CIRCLE_LOG_WARN  = 3,
-    CIRCLE_LOG_INFO  = 4,
-    CIRCLE_LOG_DBG   = 5
-} CIRCLE_loglevel;
+typedef enum loglevel {
+    LOG_FATAL = 1,
+    LOG_ERR   = 2,
+    LOG_WARN  = 3,
+    LOG_INFO  = 4,
+    LOG_DBG   = 5
+} loglevel;
 
 /**
  * The interface to the work queue. This can be accessed from within the
@@ -48,126 +45,129 @@ typedef struct {
     int8_t (*enqueue)(const char* element);
     int8_t (*dequeue)(char* element);
     uint32_t (*local_queue_size)(void);
-} CIRCLE_handle;
+} handle;
 
 /**
  * The type for defining callbacks for create and process.
  */
-typedef void (*CIRCLE_cb)(CIRCLE_handle* handle);
+typedef void (*cb)(circle::handle* handle);
 
 /**
  * Callbacks for initializing, executing, and obtaining final result
  * of a reduction
  */
-typedef void (*CIRCLE_cb_reduce_init_fn)(void);
-typedef void (*CIRCLE_cb_reduce_op_fn)(const void* buf1, size_t size1, const void* buf2, size_t size2);
-typedef void (*CIRCLE_cb_reduce_fini_fn)(const void* buf, size_t size);
+typedef void (*cb_reduce_init_fn)(void);
+typedef void (*cb_reduce_op_fn)(const void* buf1, size_t size1, const void* buf2, size_t size2);
+typedef void (*cb_reduce_fini_fn)(const void* buf, size_t size);
+
+/**
+ *  Produce a stack trace with demangled function and method names.
+ */
+const char* backtrace(int skip);
 
 /**
  * Initialize internal state needed by libcircle. This should be called before
  * any other libcircle API call. This returns the MPI rank value.
  */
-int CIRCLE_init(int argc, char* argv[], int options);
+int init(int argc, char* argv[], int options);
 
 /**
  * Change run time flags
  */
-void CIRCLE_set_options(int options);
+void set_options(int options);
 
 /**
  * Change the width of the k-ary communication tree.
  */
-void CIRCLE_set_tree_width(int width);
+void set_tree_width(int width);
 
 /**
  * Change the number of seconds between consecutive reductions.
  */
-void CIRCLE_set_reduce_period(int secs);
+void set_reduce_period(int secs);
 
 /**
  * Processing and creating work is done through callbacks. Here's how we tell
  * libcircle about our function which creates work. This call is optional.
  */
-void CIRCLE_cb_create(CIRCLE_cb func);
+void cb_create(circle::cb func);
 
 /**
  * After you give libcircle a way to create work, you need to tell it how that
  * work should be processed.
  */
-void CIRCLE_cb_process(CIRCLE_cb func);
+void cb_process(circle::cb func);
 
 /**
  * Specify function that libcircle should call to get initial data for
  * a reduction.
  */
-void CIRCLE_cb_reduce_init(CIRCLE_cb_reduce_init_fn);
+void cb_reduce_init(circle::cb_reduce_init_fn);
 
 /**
  * Specify function that libcircle should call to execute a reduction
  * operation.
  */
-void CIRCLE_cb_reduce_op(CIRCLE_cb_reduce_op_fn);
+void cb_reduce_op(circle::cb_reduce_op_fn);
 
 /**
  * Specify function that libcicle should invoke at end of reduction.
  * This function is only invoked on rank 0.
  */
-void CIRCLE_cb_reduce_fini(CIRCLE_cb_reduce_fini_fn);
+void cb_reduce_fini(circle::cb_reduce_fini_fn);
 
 /**
  * Provide libcircle with initial reduction data during initial
  * and intermediate reduction callbacks, libcircle makes a copy
  * of the data so the user buffer can be immediately released.
  */
-void CIRCLE_reduce(const void* buf, size_t size);
+void reduce(const void* buf, size_t size);
 
 /**
  * Once you've defined and told libcircle about your callbacks, use this to
  * execute your program.
  */
-void CIRCLE_begin(void);
+void begin(void);
 
 /**
  * Call this function to have all ranks dump a checkpoint file and exit.
  */
-void CIRCLE_abort(void);
+void abort(void);
 
 /**
  * Call this function to checkpoint libcircle's distributed queue. Each rank
  * writes a file called circle<rank>.txt
  */
-void CIRCLE_checkpoint(void);
+int8_t checkpoint(void);
 
 /**
   * Function to return a pointer to the handle.  Useful for threaded applications.
   * You are responsible for maintaining mutual exclusion.
   */
-CIRCLE_handle* CIRCLE_get_handle(void);
+handle* get_handle(void);
 
 /**
  * Call this function to initialize libcircle queues from restart files
- * created by CIRCLE_checkpoint.
+ * created by checkpoint.
  */
-void CIRCLE_read_restarts(void);
+int8_t read_restarts(void);
 
 /**
  * After your program has executed, give libcircle a chance to clean up after
  * itself by calling this. This should be called after all libcircle API calls.
  */
-void CIRCLE_finalize(void);
+void finalize(void);
 
 /**
  * Define the detail of logging that libcircle should output.
  */
-void CIRCLE_enable_logging(enum CIRCLE_loglevel level);
+void enable_logging(enum loglevel level);
 
 /**
  * Returns an elapsed time on the calling processor for benchmarking purposes.
  */
-double CIRCLE_wtime(void);
+double wtime(void);
 
-#ifdef __cplusplus
-} /* extern "C" */
-#endif
+} // namespace circle
 
 #endif /* LIBCIRCLE_H */

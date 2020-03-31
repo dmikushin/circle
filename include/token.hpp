@@ -8,8 +8,10 @@
 #include <stdint.h>
 #include <mpi.h>
 
-#include "queue.h"
-#include "lib.h"
+#include "queue.hpp"
+#include "lib.hpp"
+
+namespace circle {
 
 enum tags {
     WHITE,
@@ -36,15 +38,15 @@ typedef struct options {
 } options;
 
 /* records info about the tree of spawn processes */
-typedef struct CIRCLE_tree_state_st {
+typedef struct tree_state_st {
     int rank;         /* our global rank (0 to ranks-1) */
     int ranks;        /* number of nodes in tree */
     int parent_rank;  /* rank of parent */
     int children;     /* number of children we have */
     int* child_ranks; /* global ranks of our children */
-} CIRCLE_tree_state_st;
+} tree_state_st;
 
-typedef struct CIRCLE_state_st {
+typedef struct state_st {
     /* communicator and our rank and its size */
     MPI_Comm comm;
     int rank;
@@ -76,7 +78,7 @@ typedef struct CIRCLE_state_st {
     int work_requested_rank;        /* rank of process we requested work from */
 
     /* tree used for collective operations */
-    CIRCLE_tree_state_st tree;   /* parent and children of tree */
+    circle::tree_state_st tree;   /* parent and children of tree */
 
     /* manage state for reduction operations */
     int reduce_enabled;          /* flag indicating whether reductions are enabled */
@@ -108,65 +110,67 @@ typedef struct CIRCLE_state_st {
     int32_t local_objects_processed; /* number of locally completed work items */
     uint32_t local_work_requested;   /* number of times a process asked us for work */
     uint32_t local_no_work_received; /* number of times a process asked us for work */
-} CIRCLE_state_st;
+} state_st;
 
 /* given the rank of the calling process, the number of ranks in the job,
  * and a degree k, compute parent and children of tree rooted at rank 0
  * and store in tree structure */
-void CIRCLE_tree_init(int32_t rank, int32_t ranks, int32_t k, MPI_Comm comm, CIRCLE_tree_state_st* t);
+void tree_init(int32_t rank, int32_t ranks, int32_t k, MPI_Comm comm, circle::tree_state_st* t);
 
-/* free resources allocated in CIRCLE_tree_init */
-void CIRCLE_tree_free(CIRCLE_tree_state_st* t);
+/* free resources allocated in circle::tree_init */
+void tree_free(circle::tree_state_st* t);
 
 /* initiate and execute reduction in background */
-void CIRCLE_reduce_check(CIRCLE_state_st* st, int count, int cleanup);
+void reduce_check(circle::state_st* st, int count, int cleanup);
 
 /* execute synchronous reduction */
-void CIRCLE_reduce_sync(CIRCLE_state_st* st, int count);
+void reduce_sync(circle::state_st* st, int count);
 
 /* start non-blocking barrier */
-void CIRCLE_barrier_start(CIRCLE_state_st* st);
+void barrier_start(circle::state_st* st);
 
 /* test for completion of non-blocking barrier,
  * returns 1 when all procs have called barrier_start (and resets),
  * returns 0 otherwise */
-int CIRCLE_barrier_test(CIRCLE_state_st* st);
+int barrier_test(circle::state_st* st);
 
 /* test for abort, forward abort messages on tree if needed,
  * draining incoming abort messages */
-void CIRCLE_abort_check(CIRCLE_state_st* st, int cleanup);
+void abort_check(circle::state_st* st, int cleanup);
 
 /* execute an allreduce to determine whether any rank has entered
  *  * the abort state, and if so, set all ranks to be in abort state */
-void CIRCLE_abort_reduce(CIRCLE_state_st* st);
+void abort_reduce(circle::state_st* st);
 
-void CIRCLE_get_next_proc(CIRCLE_state_st* st);
+void get_next_proc(circle::state_st* st);
 
 /* checks for and receives an incoming token message,
  * then updates state */
-void CIRCLE_token_check(CIRCLE_state_st* st);
+void token_check(circle::state_st* st);
 
-int  CIRCLE_check_for_term(CIRCLE_state_st* st);
+int check_for_term(circle::state_st* st);
 
-int  CIRCLE_check_for_term_allreduce(CIRCLE_state_st* st);
+int check_for_term_allreduce(circle::state_st* st);
 
-void CIRCLE_workreceipt_check(CIRCLE_internal_queue_t* queue,
-                          CIRCLE_state_st* state);
+void workreceipt_check(circle::internal_queue_t* queue,
+                          circle::state_st* state);
 
-void CIRCLE_workreq_check(CIRCLE_internal_queue_t* queue,
-                          CIRCLE_state_st* state,
+void workreq_check(circle::internal_queue_t* queue,
+                          circle::state_st* state,
                           int cleanup);
 
-int32_t CIRCLE_request_work(CIRCLE_internal_queue_t* queue,
-                            CIRCLE_state_st* state,
+int32_t request_work(circle::internal_queue_t* queue,
+                            circle::state_st* state,
                             int cleanup);
 
-void CIRCLE_send_no_work(int32_t dest);
+void send_no_work(int32_t dest);
 
-int8_t CIRCLE_extend_offsets(CIRCLE_state_st* st, int32_t size);
+int8_t extend_offsets(circle::state_st* st, int32_t size);
 
-void CIRCLE_print_offsets(uint32_t* offsets, int32_t count);
+void print_offsets(uint32_t* offsets, int32_t count);
 
-void CIRCLE_bcast_abort(void);
+void bcast_abort(void);
+
+} // namespace circle
 
 #endif /* TOKEN_H */
