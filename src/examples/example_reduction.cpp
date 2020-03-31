@@ -102,12 +102,12 @@ static void my_create_some_work(circle::handle *handle)
     {
         for (fs::directory_iterator i(directory), ie; i != ie; i++)
         {
-                if (!fs::exists(i->status()) || !fs::is_regular_file(i->status()))
-                        continue;
+            if (!fs::exists(i->status()) || !fs::is_regular_file(i->status()))
+                continue;
 
-		const string filename = i->path().string();
-		const char* cfilename = filename.c_str();
-		handle->enqueue(cfilename);
+            const string filename = i->path().string();
+            vector<uint8_t> content(filename.begin(), filename.end());
+            handle->enqueue(content);
         }
     }
 }
@@ -126,9 +126,9 @@ static void my_process_some_work(circle::handle *handle)
      * create_some_work callback. You should try to keep this short and block
      * as little as possible.
      */
-    char my_data[1024];
-    my_data[0] = '\0';
-    handle->dequeue(my_data);
+    vector<uint8_t> content;
+    handle->dequeue(content);
+    string my_data(content.begin(), content.end());
 
     size_t finished_work = fs::file_size(my_data);
 

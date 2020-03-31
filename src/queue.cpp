@@ -7,6 +7,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <string>
 #include <assert.h>
 #include <unistd.h>
 
@@ -173,22 +174,17 @@ int8_t circle::internal_queue_extend(circle::internal_queue_t* qp, size_t new_si
 }
 
 /**
- * Push the specified string onto the queue structure.
+ * Push the specified content onto the queue structure.
  *
  * @param qp the queue structure to push the value onto.
  * @param str the string value to push onto the queue.
  *
  * @return a positive number on success, a negative one on failure.
  */
-int8_t circle::internal_queue_push(circle::internal_queue_t* qp, const char* str)
+int8_t circle::internal_queue_push(circle::internal_queue_t* qp, const std::vector<uint8_t>& content)
 {
-    if(!str) {
-        LOG(circle::LOG_ERR, "Attempted to push null pointer.");
-        return -1;
-    }
-
     /* TODO: check that real_len fits within uint32_t */
-    size_t real_len = strlen(str) + 1;
+    size_t real_len = content.size();
     uint32_t len = (uint32_t) real_len;
 
     if(len <= 0) {
@@ -225,7 +221,7 @@ int8_t circle::internal_queue_push(circle::internal_queue_t* qp, const char* str
     qp->strings[qp->count] = qp->head;
 
     /* Copy the string. */
-    strcpy(qp->base + qp->head, str);
+    memcpy(qp->base + qp->head, reinterpret_cast<const char*>(&content[0]), len);
 
     /*
      * Make head point to the character after the string (strlen doesn't
@@ -247,7 +243,7 @@ int8_t circle::internal_queue_push(circle::internal_queue_t* qp, const char* str
  *
  * @return a positive value on success, a negative one otherwise.
  */
-int8_t circle::internal_queue_pop(circle::internal_queue_t* qp, char* str)
+int8_t circle::internal_queue_pop(circle::internal_queue_t* qp, std::vector<uint8_t>& content)
 {
     if(!qp) {
         LOG(circle::LOG_ERR, "Attempted to pop from an invalid queue.");
@@ -259,15 +255,11 @@ int8_t circle::internal_queue_pop(circle::internal_queue_t* qp, char* str)
         return -1;
     }
 
-    if(!str) {
-        LOG(circle::LOG_ERR, \
-            "You must allocate a buffer for storing the result.");
-        return -1;
-    }
-
     /* Copy last element into str */
     uintptr_t current = qp->strings[qp->count - 1];
-    strcpy(str, qp->base + current);
+    size_t len = qp->head - current;
+    content.resize(len);
+    memcpy(reinterpret_cast<uint8_t*>(&content[0]), qp->base + current, len);
     qp->head = current;
     qp->count--;
 
@@ -325,7 +317,8 @@ int8_t circle::internal_queue_read(circle::internal_queue_t* qp, int rank)
             continue;
         }
 
-        if(circle::internal_queue_push(qp, str) < 0) {
+	std::vector<uint8_t> content(str, str + len);
+        if(circle::internal_queue_push(qp, content) < 0) {
             LOG(circle::LOG_ERR, "Failed to push element on queue \"%s\"", str);
         }
 
@@ -362,16 +355,16 @@ int8_t circle::internal_queue_write(circle::internal_queue_t* qp, int rank)
         return -1;
     }
 
-    char str[CIRCLE_MAX_STRING_LEN];
-
     while(qp->count > 0) {
-        if(circle::internal_queue_pop(qp, str) < 0) {
+        std::vector<uint8_t> content;
+        if(circle::internal_queue_pop(qp, content) < 0) {
             LOG(circle::LOG_ERR, "Failed to pop item off queue.");
             return -1;
         }
 
-        if(fprintf(checkpoint_file, "%s\n", str) < 0) {
-            LOG(circle::LOG_ERR, "Failed to write \"%s\" to file.", str);
+        std::string str(content.begin(), content.end());
+        if(fprintf(checkpoint_file, "%s\n", str.c_str()) < 0) {
+            LOG(circle::LOG_ERR, "Failed to write \"%s\" to file.", str.c_str());
             return -1;
         }
     }

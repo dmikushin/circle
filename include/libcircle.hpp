@@ -3,6 +3,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <vector>
 
 /**
  * The maximum length of a string value which is allowed to be placed on the
@@ -38,12 +39,11 @@ typedef enum loglevel {
 
 /**
  * The interface to the work queue. This can be accessed from within the
- * process and create work callbacks. The type of element must be a NULL
- * terminated string.
+ * process and create work callbacks.
  */
 typedef struct {
-    int8_t (*enqueue)(const char* element);
-    int8_t (*dequeue)(char* element);
+    int8_t (*enqueue)(const std::vector<uint8_t>& element);
+    int8_t (*dequeue)(std::vector<uint8_t>& element);
     uint32_t (*local_queue_size)(void);
 } handle;
 

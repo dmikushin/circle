@@ -1245,10 +1245,7 @@ static int32_t work_receive(
     qp->count = count;
 
     /* set head of queue to point just past end of last element string */
-    uintptr_t elem_offset = qp->strings[count - 1];
-    const char* elem_str = qp->base + elem_offset;
-    size_t elem_len = strlen(elem_str) + 1;
-    qp->head = elem_offset + elem_len;
+    qp->head += (uintptr_t)chars;
 
     /* log number of items we received */
     LOG(circle::LOG_DBG, "Received %d items from %d", count, source);
@@ -1397,8 +1394,7 @@ static int send_work(circle::internal_queue_t* qp, circle::state_st* st, \
     uintptr_t end_offset = qp->strings[end_elem];
 
     /* Distance between them */
-    size_t len = end_offset - start_offset;
-    len += strlen(qp->base + end_offset) + 1;
+    size_t len = qp->head - start_offset;
 
     /* TODO: check that len doesn't overflow an int */
     int bytes = (int) len;
@@ -1446,6 +1442,9 @@ static int send_work(circle::internal_queue_t* qp, circle::state_st* st, \
 
     /* subtract elements from our queue */
     qp->count -= count;
+
+    /* adjust the qp->head */
+    qp->head = start_offset;
 
     /* track number of outstanding messages that transfer work */
     st->work_outstanding++;

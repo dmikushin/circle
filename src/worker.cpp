@@ -80,7 +80,7 @@ static void MPI_error_handler(MPI_Comm* comm, int* err, ...)
  * Wrapper for pushing an element on the queue
  *
  */
-static int8_t enqueue(const char* element)
+static int8_t enqueue(const std::vector<uint8_t>& element)
 {
     return circle::internal_queue_push(INPUT_ST.queue, element);
 }
@@ -88,7 +88,7 @@ static int8_t enqueue(const char* element)
 /**
  * Wrapper for popping an element
  */
-static int8_t dequeue(char* element)
+static int8_t dequeue(std::vector<uint8_t>& element)
 {
     return circle::internal_queue_pop(INPUT_ST.queue, element);
 }

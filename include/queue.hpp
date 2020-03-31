@@ -22,8 +22,8 @@ typedef struct internal_queue_t {
 circle::internal_queue_t* internal_queue_init(void);
 int8_t internal_queue_free(circle::internal_queue_t* qp);
 
-int8_t internal_queue_push(circle::internal_queue_t* qp, const char* str);
-int8_t internal_queue_pop(circle::internal_queue_t* qp, char* str);
+int8_t internal_queue_push(circle::internal_queue_t* qp, const std::vector<uint8_t>& content);
+int8_t internal_queue_pop(circle::internal_queue_t* qp, std::vector<uint8_t>& content);
 
 void internal_queue_dump(circle::internal_queue_t* qp);
 void internal_queue_print(circle::internal_queue_t* qp);
