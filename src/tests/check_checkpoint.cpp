@@ -46,20 +46,6 @@ START_TEST
 }
 END_TEST
 
-START_TEST
-(test_checkpoint_multiple_read_write)
-{
-    fail();
-}
-END_TEST
-
-START_TEST
-(test_checkpoint_empty_read_write)
-{
-    fail();
-}
-END_TEST
-
 Suite*
 check_checkpoint_suite(void)
 {
@@ -67,8 +53,6 @@ check_checkpoint_suite(void)
     TCase* tc_core = tcase_create("Core");
 
     tcase_add_test(tc_core, test_checkpoint_single_read_write);
-    tcase_add_test(tc_core, test_checkpoint_multiple_read_write);
-    tcase_add_test(tc_core, test_checkpoint_empty_read_write);
 
     suite_add_tcase(s, tc_core);
 
