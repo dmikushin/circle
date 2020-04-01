@@ -23,7 +23,7 @@ namespace impl {
 
 extern int8_t ABORT_FLAG;
 
-extern circle::Circle INPUT_ST;
+extern circle::Circle circle;
 
 } // namespace impl
 } // namespace circle
@@ -173,10 +173,10 @@ void circle::reduce_check(circle::state_st *st, int count, int cleanup) {
         /* if we have valid data, invoke user's callback to
          * reduce user data */
         if (st->reduce_buf[0] == MSG_VALID) {
-          if (INPUT_ST.reduce_op_cb != NULL) {
-            void *currbuf = INPUT_ST.reduce_buf;
-            size_t currsize = INPUT_ST.reduce_buf_size;
-            (*(INPUT_ST.reduce_op_cb))(currbuf, currsize, inbuf, insize);
+          if (circle::impl::circle.reduce_op_cb != NULL) {
+            void *currbuf = circle::impl::circle.reduce_buf;
+            size_t currsize = circle::impl::circle.reduce_buf_size;
+            (*(circle::impl::circle.reduce_op_cb))(currbuf, currsize, inbuf, insize);
           }
         }
 
@@ -193,7 +193,7 @@ void circle::reduce_check(circle::state_st *st, int count, int cleanup) {
       /* send message to parent if we have one */
       if (parent_rank != MPI_PROC_NULL) {
         /* get size of user data */
-        int bytes = (int)INPUT_ST.reduce_buf_size;
+        int bytes = (int)circle::impl::circle.reduce_buf_size;
         st->reduce_buf[2] = (long long int)bytes;
 
         /* send partial result to parent */
@@ -202,7 +202,7 @@ void circle::reduce_check(circle::state_st *st, int count, int cleanup) {
 
         /* also send along user data if any, and if it is valid */
         if (bytes > 0 && st->reduce_buf[0] == MSG_VALID) {
-          void *currbuf = INPUT_ST.reduce_buf;
+          void *currbuf = circle::impl::circle.reduce_buf;
           MPI_Send(currbuf, bytes, MPI_BYTE, parent_rank,
                    circle::CIRCLE_TAG_REDUCE, comm);
         }
@@ -213,10 +213,10 @@ void circle::reduce_check(circle::state_st *st, int count, int cleanup) {
               st->reduce_buf[1]);
 
           /* invoke callback on root to deliver final result */
-          if (INPUT_ST.reduce_fini_cb != NULL) {
-            void *resultbuf = INPUT_ST.reduce_buf;
-            size_t resultsize = INPUT_ST.reduce_buf_size;
-            (*(INPUT_ST.reduce_fini_cb))(resultbuf, resultsize);
+          if (circle::impl::circle.reduce_fini_cb != NULL) {
+            void *resultbuf = circle::impl::circle.reduce_buf;
+            size_t resultsize = circle::impl::circle.reduce_buf_size;
+            (*(circle::impl::circle.reduce_fini_cb))(resultbuf, resultsize);
           }
         }
       }
@@ -280,10 +280,10 @@ void circle::reduce_check(circle::state_st *st, int count, int cleanup) {
       st->reduce_buf[2] = 0; /* initialize byte count */
 
       /* invoke callback to get input data,
-       * it will be stored in INPUT_ST after user
+       * it will be stored in circle::impl::circle after user
        * calls circle::reduce which should be done in callback */
-      if (INPUT_ST.reduce_init_cb != NULL) {
-        (*(INPUT_ST.reduce_init_cb))();
+      if (circle::impl::circle.reduce_init_cb != NULL) {
+        (*(circle::impl::circle.reduce_init_cb))();
       }
 
       /* send message to each child */
@@ -316,10 +316,10 @@ void circle::reduce_sync(circle::state_st *st, int count) {
   st->reduce_buf[2] = 0; /* initialize byte count */
 
   /* invoke callback to get input data,
-   * it will be stored in INPUT_ST after user
+   * it will be stored in circle::impl::circle after user
    * calls circle::reduce which should be done in callback */
-  if (INPUT_ST.reduce_init_cb != NULL) {
-    (*(INPUT_ST.reduce_init_cb))();
+  if (circle::impl::circle.reduce_init_cb != NULL) {
+    (*(circle::impl::circle.reduce_init_cb))();
   }
 
   /* wait for messages from our children */
@@ -356,10 +356,10 @@ void circle::reduce_sync(circle::state_st *st, int count) {
     }
 
     /* invoke user's callback to reduce user data */
-    if (INPUT_ST.reduce_op_cb != NULL) {
-      void *currbuf = INPUT_ST.reduce_buf;
-      size_t currsize = INPUT_ST.reduce_buf_size;
-      (*(INPUT_ST.reduce_op_cb))(currbuf, currsize, inbuf, insize);
+    if (circle::impl::circle.reduce_op_cb != NULL) {
+      void *currbuf = circle::impl::circle.reduce_buf;
+      size_t currsize = circle::impl::circle.reduce_buf_size;
+      (*(circle::impl::circle.reduce_op_cb))(currbuf, currsize, inbuf, insize);
     }
 
     /* free temporary buffer holding incoming user data */
@@ -369,7 +369,7 @@ void circle::reduce_sync(circle::state_st *st, int count) {
   /* send message to parent if we have one */
   if (parent_rank != MPI_PROC_NULL) {
     /* get size of user data */
-    int bytes = (int)INPUT_ST.reduce_buf_size;
+    int bytes = (int)circle::impl::circle.reduce_buf_size;
     st->reduce_buf[2] = (long long int)bytes;
 
     /* send partial result to parent */
@@ -378,7 +378,7 @@ void circle::reduce_sync(circle::state_st *st, int count) {
 
     /* also send along user data if any */
     if (bytes > 0) {
-      void *currbuf = INPUT_ST.reduce_buf;
+      void *currbuf = circle::impl::circle.reduce_buf;
       MPI_Send(currbuf, bytes, MPI_BYTE, parent_rank, circle::CIRCLE_TAG_REDUCE,
                comm);
     }
@@ -387,10 +387,10 @@ void circle::reduce_sync(circle::state_st *st, int count) {
     LOG(circle::LogLevel::Info, "Objects processed: %lld (done)", st->reduce_buf[1]);
 
     /* invoke callback on root to deliver final result */
-    if (INPUT_ST.reduce_fini_cb != NULL) {
-      void *resultbuf = INPUT_ST.reduce_buf;
-      size_t resultsize = INPUT_ST.reduce_buf_size;
-      (*(INPUT_ST.reduce_fini_cb))(resultbuf, resultsize);
+    if (circle::impl::circle.reduce_fini_cb != NULL) {
+      void *resultbuf = circle::impl::circle.reduce_buf;
+      size_t resultsize = circle::impl::circle.reduce_buf_size;
+      (*(circle::impl::circle.reduce_fini_cb))(resultbuf, resultsize);
     }
   }
 
@@ -1321,7 +1321,7 @@ void circle::send_no_work(int dest) {
 
   MPI_Request r;
   MPI_Isend(&no_work, 1, MPI_INT, dest, circle::CIRCLE_TAG_WORK_REPLY,
-            INPUT_ST.impl->comm, &r);
+            circle::impl::circle.impl->comm, &r);
   MPI_Wait(&r, MPI_STATUS_IGNORE);
 }
 
@@ -1434,7 +1434,7 @@ static void send_work_to_many(circle::internal_queue_t *qp,
     MPI_Abort(st->comm, LIBCIRCLE_MPI_ERROR);
   }
 
-  if ((INPUT_ST.options & circle::RuntimeFlags::SplitEqual) !=
+  if ((circle::impl::circle.runtimeFlags & circle::RuntimeFlags::SplitEqual) !=
       circle::RuntimeFlags::None) {
     /* split queue equally among ourself and all requestors */
     spread_counts(&sizes[0], num_ranks, qp->count);

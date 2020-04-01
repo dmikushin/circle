@@ -28,5 +28,5 @@ public : // TODO remove
 } // namespace internal
 } // namespace circle
 
-#endif // CIRCLE_IMPL_H
+#endif /* CIRCLE_IMPL_H */
 

@@ -25,7 +25,7 @@ namespace impl {
 
 int8_t ABORT_FLAG;
 
-extern circle::Circle INPUT_ST;
+extern circle::Circle circle;
 
 } // namespace impl
 } // namespace circle
@@ -79,7 +79,7 @@ static void MPI_error_handler(MPI_Comm *comm, int *err, ...) {
  *
  */
 int circle::WorkQueue::enqueue(const std::vector<uint8_t> &element) {
-  return circle::internal_queue_push(INPUT_ST.impl->queue, element);
+  return circle::internal_queue_push(circle::impl::circle.impl->queue, element);
 }
 
 int circle::WorkQueue::enqueue(const std::string &element)
@@ -93,7 +93,7 @@ int circle::WorkQueue::enqueue(const std::string &element)
  */
 int circle::WorkQueue::dequeue(std::vector<uint8_t> &element)
 {
-  return circle::internal_queue_pop(INPUT_ST.impl->queue, element);
+  return circle::internal_queue_pop(circle::impl::circle.impl->queue, element);
 }
 
 int circle::WorkQueue::dequeue(std::string &element)
@@ -108,14 +108,14 @@ int circle::WorkQueue::dequeue(std::string &element)
  * Wrapper for getting the local queue size
  */
 uint32_t circle::WorkQueue::localQueueSize(void) {
-  return (uint32_t)INPUT_ST.impl->queue->count;
+  return (uint32_t)circle::impl::circle.impl->queue->count;
 }
 
 /**
  * Call this function to read in libcircle restart files.
  */
 int8_t circle::read_restarts(void) {
-  return circle::internal_queue_read(INPUT_ST.impl->queue, circle::global_rank);
+  return circle::internal_queue_read(circle::impl::circle.impl->queue, circle::global_rank);
 }
 
 /**
@@ -123,7 +123,7 @@ int8_t circle::read_restarts(void) {
  * writes a file called circle<rank>.txt
  */
 int8_t circle::checkpoint(void) {
-  return circle::internal_queue_write(INPUT_ST.impl->queue, circle::global_rank);
+  return circle::internal_queue_write(circle::impl::circle.impl->queue, circle::global_rank);
 }
 
 /**
@@ -136,7 +136,7 @@ static void init_local_state(MPI_Comm comm, circle::state_st *local_state) {
   MPI_Comm_size(comm, &size);
 
   /* set rank and size in state */
-  local_state->comm = INPUT_ST.impl->comm;
+  local_state->comm = circle::impl::circle.impl->comm;
   local_state->rank = rank;
   local_state->size = size;
 
@@ -157,7 +157,7 @@ static void init_local_state(MPI_Comm comm, circle::state_st *local_state) {
   local_state->token_send_req = MPI_REQUEST_NULL;
 
   /* allocate memory for our offset arrays */
-  int32_t offsets = INPUT_ST.impl->queue->str_count;
+  int32_t offsets = circle::impl::circle.impl->queue->str_count;
   local_state->offsets_count = offsets;
   local_state->offsets_send_buf = (int *)calloc((size_t)offsets, sizeof(int));
   local_state->offsets_recv_buf = (int *)calloc((size_t)offsets, sizeof(int));
@@ -176,19 +176,19 @@ static void init_local_state(MPI_Comm comm, circle::state_st *local_state) {
   /* determine whether we are using tree-based or circle-based
    * termination detection */
   local_state->term_tree_enabled = 0;
-  if ((INPUT_ST.options & circle::RuntimeFlags::TermTree) !=
+  if ((circle::impl::circle.runtimeFlags & circle::RuntimeFlags::TermTree) !=
       circle::RuntimeFlags::None) {
     local_state->term_tree_enabled = 1;
   }
 
   /* create our collective tree */
-  int tree_width = INPUT_ST.impl->tree_width;
+  int tree_width = circle::impl::circle.impl->tree_width;
   circle::tree_init(rank, size, tree_width, local_state->comm,
                     &local_state->tree);
 
   /* init state for progress reduction operations */
   local_state->reduce_enabled = 0;
-  double secs = (double)INPUT_ST.reduce_period;
+  double secs = (double)circle::impl::circle.reduce_period;
   if (secs > 0.0) {
     local_state->reduce_enabled = 1;
   }
@@ -266,10 +266,10 @@ static void work_loop(circle::state_st *sptr, circle::WorkQueue *q_handle) {
   /* Loop until done, we break on normal termination or abort */
   while (1) {
     /* Check for and service work requests */
-    circle::workreq_check(INPUT_ST.impl->queue, sptr, cleanup);
+    circle::workreq_check(circle::impl::circle.impl->queue, sptr, cleanup);
 
     /* process any incoming work receipt messages */
-    circle::workreceipt_check(INPUT_ST.impl->queue, sptr);
+    circle::workreceipt_check(circle::impl::circle.impl->queue, sptr);
 
     /* check for incoming abort messages */
     circle::abort_check(sptr, cleanup);
@@ -280,14 +280,14 @@ static void work_loop(circle::state_st *sptr, circle::WorkQueue *q_handle) {
     }
 
     /* If I have no work, request work from another rank */
-    if (INPUT_ST.impl->queue->count == 0) {
-      circle::request_work(INPUT_ST.impl->queue, sptr, cleanup);
+    if (circle::impl::circle.impl->queue->count == 0) {
+      circle::request_work(circle::impl::circle.impl->queue, sptr, cleanup);
     }
 
     /* If I have some work and have not received a signal to
      * abort, process one work item */
-    if (INPUT_ST.impl->queue->count > 0 && !ABORT_FLAG) {
-      (*(INPUT_ST.process_cb))(q_handle);
+    if (circle::impl::circle.impl->queue->count > 0 && !ABORT_FLAG) {
+      (*(circle::impl::circle.process_cb))(q_handle);
       sptr->local_objects_processed++;
     }
     /* If I don't have work, or if I received signal to abort,
@@ -392,7 +392,7 @@ static void work_loop(circle::state_st *sptr, circle::WorkQueue *q_handle) {
     }
 
     /* send no work message for any work request that comes in */
-    circle::workreq_check(INPUT_ST.impl->queue, sptr, cleanup);
+    circle::workreq_check(circle::impl::circle.impl->queue, sptr, cleanup);
 
     /* cleanup any outstanding reduction */
     if (sptr->reduce_enabled) {
@@ -400,7 +400,7 @@ static void work_loop(circle::state_st *sptr, circle::WorkQueue *q_handle) {
     }
 
     /* receive any incoming work reply messages */
-    circle::request_work(INPUT_ST.impl->queue, sptr, cleanup);
+    circle::request_work(circle::impl::circle.impl->queue, sptr, cleanup);
 
     /* drain any outstanding abort messages */
     circle::abort_check(sptr, cleanup);
@@ -448,7 +448,7 @@ int8_t circle::worker() {
   circle::state_st *sptr = &local_state;
 
   /* get MPI communicator */
-  MPI_Comm comm = INPUT_ST.impl->comm;
+  MPI_Comm comm = circle::impl::circle.impl->comm;
 
   /* get our rank and the size of the communicator */
   int rank, size;
@@ -464,32 +464,32 @@ int8_t circle::worker() {
   MPI_Comm_set_errhandler(comm, circle_err);
 
   /* print settings of some runtime tunables */
-  if ((INPUT_ST.options & circle::RuntimeFlags::SplitEqual) !=
+  if ((circle::impl::circle.runtimeFlags & circle::RuntimeFlags::SplitEqual) !=
       circle::RuntimeFlags::None) {
     LOG(circle::LogLevel::Debug, "Using equalized load splitting.");
   }
 
-  if ((INPUT_ST.options & circle::RuntimeFlags::SplitRandom) !=
+  if ((circle::impl::circle.runtimeFlags & circle::RuntimeFlags::SplitRandom) !=
       circle::RuntimeFlags::None) {
     LOG(circle::LogLevel::Debug, "Using randomized load splitting.");
   }
 
-  if ((INPUT_ST.options & circle::RuntimeFlags::CreateGlobal) !=
+  if ((circle::impl::circle.runtimeFlags & circle::RuntimeFlags::CreateGlobal) !=
       circle::RuntimeFlags::None) {
     LOG(circle::LogLevel::Debug, "Create callback enabled on all ranks.");
   } else {
     LOG(circle::LogLevel::Debug, "Create callback enabled on rank 0 only.");
   }
 
-  if ((INPUT_ST.options & circle::RuntimeFlags::TermTree) !=
+  if ((circle::impl::circle.runtimeFlags & circle::RuntimeFlags::TermTree) !=
       circle::RuntimeFlags::None) {
     LOG(circle::LogLevel::Debug, "Using tree termination detection.");
   } else {
     LOG(circle::LogLevel::Debug, "Using circle termination detection.");
   }
 
-  LOG(circle::LogLevel::Debug, "Tree width: %d", INPUT_ST.impl->tree_width);
-  LOG(circle::LogLevel::Debug, "Reduce period (secs): %d", INPUT_ST.reduce_period);
+  LOG(circle::LogLevel::Debug, "Tree width: %d", circle::impl::circle.impl->tree_width);
+  LOG(circle::LogLevel::Debug, "Reduce period (secs): %d", circle::impl::circle.reduce_period);
 
   /**********************************
    * this is where the heavy lifting is done
@@ -497,9 +497,9 @@ int8_t circle::worker() {
 
   /* add initial work to queues by calling create_cb,
    * only invoke on master unless CREATE_GLOBAL is set */
-  if (rank == 0 || (INPUT_ST.options & circle::RuntimeFlags::CreateGlobal) !=
+  if (rank == 0 || (circle::impl::circle.runtimeFlags & circle::RuntimeFlags::CreateGlobal) !=
                        circle::RuntimeFlags::None) {
-    (*(INPUT_ST.create_cb))(&queue_handle);
+    (*(circle::impl::circle.create_cb))(&queue_handle);
   }
 
   /* work until we get a terminate message */

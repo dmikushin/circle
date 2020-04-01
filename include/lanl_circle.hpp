@@ -1,12 +1,10 @@
-#ifndef LIBCIRCLE_H
-#define LIBCIRCLE_H
+#ifndef LANL_CIRCLE_H
+#define LANL_CIRCLE_H
 
 #include <stddef.h>
 #include <stdint.h>
 #include <string>
 #include <vector>
-
-#include "queue.hpp"
 
 /**
  * The maximum length of a string value which is allowed to be placed on the
@@ -102,9 +100,16 @@ struct Circle {
   size_t reduce_buf_size;
   int reduce_period;
 
-  circle::RuntimeFlags options;
+  circle::RuntimeFlags runtimeFlags;
 
   internal::CircleImpl* impl;
+
+public :
+
+  /**
+   * Change run time flags.
+   */
+  void setRuntimeFlags(circle::RuntimeFlags options);
 };
 
 /**
@@ -117,11 +122,6 @@ const char *backtrace(int skip);
  * any other libcircle API call. This returns the MPI rank value.
  */
 int init(int argc, char *argv[], circle::RuntimeFlags options);
-
-/**
- * Change run time flags
- */
-void set_options(circle::RuntimeFlags options);
 
 /**
  * Change the width of the k-ary communication tree.
@@ -217,4 +217,4 @@ double wtime(void);
 
 } // namespace circle
 
-#endif /* LIBCIRCLE_H */
+#endif /* LANL_CIRCLE_H */
