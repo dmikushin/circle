@@ -1,6 +1,6 @@
+#include <ghc/filesystem.hpp>
 #include <iostream>
 #include <libcircle.hpp>
-#include <ghc/filesystem.hpp>
 
 namespace fs = ghc::filesystem;
 using namespace std;
@@ -17,17 +17,16 @@ static size_t sztotal_partial = 0;
  * its contents can be safely changed or go out of scope after the call
  * to circle::reduce returns.
  */
-static void reduce_init(void)
-{
-    /*
-     * We give the starting memory address and size of a memory
-     * block that we want libcircle to capture on this process when
-     * it starts a new reduction operation.
-     *
-     * In this example, we capture a single uint64_t value,
-     * which is the global reduce_count variable.
-     */
-    circle::reduce(&sztotal_partial, sizeof(size_t));
+static void reduce_init(void) {
+  /*
+   * We give the starting memory address and size of a memory
+   * block that we want libcircle to capture on this process when
+   * it starts a new reduction operation.
+   *
+   * In this example, we capture a single uint64_t value,
+   * which is the global reduce_count variable.
+   */
+  circle::reduce(&sztotal_partial, sizeof(size_t));
 }
 
 /*
@@ -46,23 +45,23 @@ static void reduce_init(void)
  * input buffer.  For example, one could concatentate buffers so that
  * the reduction actually performs a gather operation.
  */
-static void reduce_op(const void* buf1, size_t size1, const void* buf2, size_t size2)
-{
-    /*
-     * Here we are given the starting address and size of two input
-     * buffers.  These could be the initial memory blocks copied during
-     * reduce_init, or they could be intermediate results copied from a
-     * reduce_op call.  We can execute an arbitrary operation on these
-     * input buffers and then we save the partial result to a call
-     * to circle::reduce.
-     *
-     * In this example, we sum two input uint64_t values and
-     * libcircle makes a copy of the result when we call circle::reduce.
-     */
-    uint64_t a = *(const uint64_t*) buf1;
-    uint64_t b = *(const uint64_t*) buf2;
-    uint64_t sum = a + b;
-    circle::reduce(&sum, sizeof(uint64_t));
+static void reduce_op(const void *buf1, size_t size1, const void *buf2,
+                      size_t size2) {
+  /*
+   * Here we are given the starting address and size of two input
+   * buffers.  These could be the initial memory blocks copied during
+   * reduce_init, or they could be intermediate results copied from a
+   * reduce_op call.  We can execute an arbitrary operation on these
+   * input buffers and then we save the partial result to a call
+   * to circle::reduce.
+   *
+   * In this example, we sum two input uint64_t values and
+   * libcircle makes a copy of the result when we call circle::reduce.
+   */
+  uint64_t a = *(const uint64_t *)buf1;
+  uint64_t b = *(const uint64_t *)buf2;
+  uint64_t sum = a + b;
+  circle::reduce(&sum, sizeof(uint64_t));
 }
 
 /*
@@ -70,97 +69,89 @@ static void reduce_op(const void* buf1, size_t size1, const void* buf2, size_t s
  * provides a buffer holding the final reduction result as in input
  * parameter. Typically, one might print the result in this callback.
  */
-static void reduce_fini(const void* buf, size_t size)
-{
-    /*
-     * In this example, we get the reduced sum from the input buffer,
-     * and we compute the average processing rate.  We then print
-     * the count, time, and rate of items processed.
-     */
+static void reduce_fini(const void *buf, size_t size) {
+  /*
+   * In this example, we get the reduced sum from the input buffer,
+   * and we compute the average processing rate.  We then print
+   * the count, time, and rate of items processed.
+   */
 
-    // get result of reduction
-    const size_t sztotal = *reinterpret_cast<const size_t*>(buf);
-    cout << "sztotal = " << sztotal << endl;
+  // get result of reduction
+  const size_t sztotal = *reinterpret_cast<const size_t *>(buf);
+  cout << "sztotal = " << sztotal << endl;
 }
 
 /* An example of a create callback defined by your program */
-static void my_create_some_work(circle::handle *handle)
-{
-    /*
-     * This is where you should generate work that needs to be processed.
-     * For example, if your goal is to size files on a cluster filesystem,
-     * this is where you would read directory and and enqueue directory names.
-     *
-     * By default, the create callback is only executed on the root
-     * process, i.e., the process whose call to circle::init returns 0.
-     * If the circle::CREATE_GLOBAL option flag is specified, the create
-     * callback is invoked on all processes.
-     */
+static void my_create_some_work(circle::handle *handle) {
+  /*
+   * This is where you should generate work that needs to be processed.
+   * For example, if your goal is to size files on a cluster filesystem,
+   * this is where you would read directory and and enqueue directory names.
+   *
+   * By default, the create callback is only executed on the root
+   * process, i.e., the process whose call to circle::init returns 0.
+   * If the circle::CREATE_GLOBAL option flag is specified, the create
+   * callback is invoked on all processes.
+   */
 
-    const fs::path directory = "/bin/";
-    if (fs::exists(directory) && fs::is_directory(directory))
-    {
-        for (fs::directory_iterator i(directory), ie; i != ie; i++)
-        {
-            if (!fs::exists(i->status()) || !fs::is_regular_file(i->status()))
-                continue;
+  const fs::path directory = "/bin/";
+  if (fs::exists(directory) && fs::is_directory(directory)) {
+    for (fs::directory_iterator i(directory), ie; i != ie; i++) {
+      if (!fs::exists(i->status()) || !fs::is_regular_file(i->status()))
+        continue;
 
-            const string filename = i->path().string();
-            vector<uint8_t> content(filename.begin(), filename.end());
-            handle->enqueue(content);
-        }
+      const string filename = i->path().string();
+      vector<uint8_t> content(filename.begin(), filename.end());
+      handle->enqueue(content);
     }
+  }
 }
 
-void store_in_database(size_t finished_work)
-{
-    sztotal_partial += finished_work;
+void store_in_database(size_t finished_work) {
+  sztotal_partial += finished_work;
 }
 
 /* An example of a process callback defined by your program. */
-static void my_process_some_work(circle::handle *handle)
-{
-    /*
-     * This is where work should be processed. For example, this is where you
-     * should size one of the files which was placed on the queue by your
-     * create_some_work callback. You should try to keep this short and block
-     * as little as possible.
-     */
-    vector<uint8_t> content;
-    handle->dequeue(content);
-    string my_data(content.begin(), content.end());
+static void my_process_some_work(circle::handle *handle) {
+  /*
+   * This is where work should be processed. For example, this is where you
+   * should size one of the files which was placed on the queue by your
+   * create_some_work callback. You should try to keep this short and block
+   * as little as possible.
+   */
+  vector<uint8_t> content;
+  handle->dequeue(content);
+  string my_data(content.begin(), content.end());
 
-    size_t finished_work = fs::file_size(my_data);
+  size_t finished_work = fs::file_size(my_data);
 
-    store_in_database(finished_work);
+  store_in_database(finished_work);
 }
 
-int main(int argc, char* argv[])
-{
-    /*
-     * Do partial computations with libcircle.
-     */
-    int rank = circle::init(argc, argv, circle::RuntimeFlags::DefaultFlags);
-    circle::enable_logging(circle::LOG_INFO);
-    circle::cb_create(&my_create_some_work);
-    circle::cb_process(&my_process_some_work);
+int main(int argc, char *argv[]) {
+  /*
+   * Do partial computations with libcircle.
+   */
+  int rank = circle::init(argc, argv, circle::RuntimeFlags::DefaultFlags);
+  circle::enable_logging(circle::LOG_INFO);
+  circle::cb_create(&my_create_some_work);
+  circle::cb_process(&my_process_some_work);
 
-    /*
-     * Reduce the final result.
-     */
-    circle::cb_reduce_init(&reduce_init);
-    circle::cb_reduce_op(&reduce_op);
-    circle::cb_reduce_fini(&reduce_fini);
+  /*
+   * Reduce the final result.
+   */
+  circle::cb_reduce_init(&reduce_init);
+  circle::cb_reduce_op(&reduce_op);
+  circle::cb_reduce_fini(&reduce_fini);
 
-    /*
-     * Specify time period between consecutive reductions.
-     * Here we set a time period of 10 seconds.
-     */
-    circle::set_reduce_period(10);
+  /*
+   * Specify time period between consecutive reductions.
+   * Here we set a time period of 10 seconds.
+   */
+  circle::set_reduce_period(10);
 
-    circle::begin();
-    circle::finalize();
+  circle::begin();
+  circle::finalize();
 
-    return 0;
+  return 0;
 }
-

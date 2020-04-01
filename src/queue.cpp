@@ -3,17 +3,17 @@
  * This file contains functions related to the local queue structure.
  */
 
-#include <stdio.h>
+#include <assert.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <string>
-#include <assert.h>
 #include <unistd.h>
 
 #include "libcircle.hpp"
-#include "queue.hpp"
 #include "log.hpp"
+#include "queue.hpp"
 
 /**
  * Allocate memory for the basic queue structure used by libcircle.
@@ -22,35 +22,33 @@
  *
  * @see circle::internal_queue_free
  */
-circle::internal_queue_t* circle::internal_queue_init(void)
-{
-    circle::internal_queue_t* qp;
+circle::internal_queue_t *circle::internal_queue_init(void) {
+  circle::internal_queue_t *qp;
 
-    LOG(circle::LOG_DBG, "Allocating a queue structure.");
+  LOG(circle::LOG_DBG, "Allocating a queue structure.");
 
-    qp = (circle::internal_queue_t*) malloc(sizeof(circle::internal_queue_t));
+  qp = (circle::internal_queue_t *)malloc(sizeof(circle::internal_queue_t));
 
-    /* Number of string pointers we have allocated */
-    size_t str_count = CIRCLE_INITIAL_INTERNAL_QUEUE_SIZE;
-    qp->str_count = (int32_t) str_count;
+  /* Number of string pointers we have allocated */
+  size_t str_count = CIRCLE_INITIAL_INTERNAL_QUEUE_SIZE;
+  qp->str_count = (int32_t)str_count;
 
-    /* Base address of string pool */
-    qp->bytes = sizeof(char) * CIRCLE_MAX_STRING_LEN * str_count;
-    qp->base  = (char*) malloc(qp->bytes);
-    qp->count = 0;
-    qp->head  = 0;
+  /* Base address of string pool */
+  qp->bytes = sizeof(char) * CIRCLE_MAX_STRING_LEN * str_count;
+  qp->base = (char *)malloc(qp->bytes);
+  qp->count = 0;
+  qp->head = 0;
 
-    /* String pointer array */
-    qp->strings = (uintptr_t*) malloc(sizeof(uintptr_t) * \
-                                      str_count);
+  /* String pointer array */
+  qp->strings = (uintptr_t *)malloc(sizeof(uintptr_t) * str_count);
 
-    if(!qp || !qp->base || !qp->strings) {
-        LOG(circle::LOG_ERR, "Failed to allocate a basic queue structure.");
-        circle::internal_queue_free(qp);
-        return (circle::internal_queue_t*) NULL;
-    }
+  if (!qp || !qp->base || !qp->strings) {
+    LOG(circle::LOG_ERR, "Failed to allocate a basic queue structure.");
+    circle::internal_queue_free(qp);
+    return (circle::internal_queue_t *)NULL;
+  }
 
-    return qp;
+  return qp;
 }
 
 /**
@@ -59,28 +57,26 @@ circle::internal_queue_t* circle::internal_queue_init(void)
  * @param qp the reference to the queue that should be freed.
  * @return a negative value on failure, a positive one on success.
  */
-int8_t circle::internal_queue_free(circle::internal_queue_t* qp)
-{
-    if(qp) {
-        if(qp->strings) {
-            LOG(circle::LOG_DBG, "Freeing the queue strings array.");
-            free(qp->strings);
-        }
-
-        if(qp->base) {
-            LOG(circle::LOG_DBG, "Freeing the queue base.");
-            free(qp->base);
-        }
-
-        LOG(circle::LOG_DBG, "Freeing a queue pointer.");
-        free(qp);
-    }
-    else {
-        LOG(circle::LOG_ERR, "Attempted to free a null queue structure.");
-        return -1;
+int8_t circle::internal_queue_free(circle::internal_queue_t *qp) {
+  if (qp) {
+    if (qp->strings) {
+      LOG(circle::LOG_DBG, "Freeing the queue strings array.");
+      free(qp->strings);
     }
 
-    return 1;
+    if (qp->base) {
+      LOG(circle::LOG_DBG, "Freeing the queue base.");
+      free(qp->base);
+    }
+
+    LOG(circle::LOG_DBG, "Freeing a queue pointer.");
+    free(qp);
+  } else {
+    LOG(circle::LOG_ERR, "Attempted to free a null queue structure.");
+    return -1;
+  }
+
+  return 1;
 }
 
 /**
@@ -88,19 +84,17 @@ int8_t circle::internal_queue_free(circle::internal_queue_t* qp)
  *
  * @param qp the queue structure that should be dumped.
  */
-void circle::internal_queue_dump(circle::internal_queue_t* qp)
-{
-    uint32_t i = 0;
-    char* p = qp->base;
+void circle::internal_queue_dump(circle::internal_queue_t *qp) {
+  uint32_t i = 0;
+  char *p = qp->base;
 
-    while(p++ < (qp->base + qp->bytes)) {
-        if(i++ % 120 == 0) {
-            LOG(circle::LOG_DBG, "%c", *p);
-        }
-        else {
-            LOG(circle::LOG_DBG, "%c", *p);
-        }
+  while (p++ < (qp->base + qp->bytes)) {
+    if (i++ % 120 == 0) {
+      LOG(circle::LOG_DBG, "%c", *p);
+    } else {
+      LOG(circle::LOG_DBG, "%c", *p);
     }
+  }
 }
 
 /**
@@ -108,69 +102,69 @@ void circle::internal_queue_dump(circle::internal_queue_t* qp)
  *
  * @param qp the queue structure that should be pretty-printed.
  */
-void circle::internal_queue_print(circle::internal_queue_t* qp)
-{
-    int32_t i = 0;
+void circle::internal_queue_print(circle::internal_queue_t *qp) {
+  int32_t i = 0;
 
-    for(i = 0; i < qp->count; i++) {
-        LOG(circle::LOG_DBG, "\t[%p][%d] %s", \
-            qp->base + qp->strings[i], i, qp->base + qp->strings[i]);
-    }
+  for (i = 0; i < qp->count; i++) {
+    LOG(circle::LOG_DBG, "\t[%p][%d] %s", qp->base + qp->strings[i], i,
+        qp->base + qp->strings[i]);
+  }
 }
 /**
  * Extend the string array size size
  *
  */
-int8_t circle::internal_queue_str_extend(circle::internal_queue_t* qp, \
-                                        int32_t new_size)
-{
-    int32_t old_count = qp->str_count;
+int8_t circle::internal_queue_str_extend(circle::internal_queue_t *qp,
+                                         int32_t new_size) {
+  int32_t old_count = qp->str_count;
 
-    /* TODO: check for overflow */
-    while(qp->str_count < new_size) {
-        qp->str_count += 4096;
-    }
+  /* TODO: check for overflow */
+  while (qp->str_count < new_size) {
+    qp->str_count += 4096;
+  }
 
-    size_t size = ((size_t)qp->str_count) * sizeof(uintptr_t);
-    qp->strings = (uintptr_t*) realloc(qp->strings, size);
+  size_t size = ((size_t)qp->str_count) * sizeof(uintptr_t);
+  qp->strings = (uintptr_t *)realloc(qp->strings, size);
 
-    LOG(circle::LOG_DBG, "Reallocing string array from" \
-        " [%d] to [%d] [%p] -> [%p]", old_count, qp->str_count, \
-        (void*)qp->strings, (void*)(qp->strings + size));
+  LOG(circle::LOG_DBG,
+      "Reallocing string array from"
+      " [%d] to [%d] [%p] -> [%p]",
+      old_count, qp->str_count, (void *)qp->strings,
+      (void *)(qp->strings + size));
 
-    if(!qp->strings) {
-        LOG(circle::LOG_ERR, "Unable to realloc string array.");
-        return -1;
-    }
+  if (!qp->strings) {
+    LOG(circle::LOG_ERR, "Unable to realloc string array.");
+    return -1;
+  }
 
-    return 0;
+  return 0;
 }
 
 /**
  * Extend the circle queue size
  *
  */
-int8_t circle::internal_queue_extend(circle::internal_queue_t* qp, size_t new_size)
-{
-    size_t current = qp->bytes;
+int8_t circle::internal_queue_extend(circle::internal_queue_t *qp,
+                                     size_t new_size) {
+  size_t current = qp->bytes;
 
-    /* TODO: check for overflow */
-    while(current < new_size) {
-        current += ((size_t)sysconf(_SC_PAGESIZE)) * 4096;
-    }
+  /* TODO: check for overflow */
+  while (current < new_size) {
+    current += ((size_t)sysconf(_SC_PAGESIZE)) * 4096;
+  }
 
-    LOG(circle::LOG_DBG, "Reallocing queue from [%zd] to [%zd] [%p] -> [%p].", \
-        qp->bytes, current, qp->base, qp->base + current);
+  LOG(circle::LOG_DBG, "Reallocing queue from [%zd] to [%zd] [%p] -> [%p].",
+      qp->bytes, current, qp->base, qp->base + current);
 
-    qp->base = (char*) realloc(qp->base, current);
+  qp->base = (char *)realloc(qp->base, current);
 
-    if(!qp->base) {
-        LOG(circle::LOG_ERR, "Failed to reallocate a basic queue structure.");
-        return -1;
-    }
+  if (!qp->base) {
+    LOG(circle::LOG_ERR, "Failed to reallocate a basic queue structure.");
+    return -1;
+  }
 
-    qp->bytes = current;
-    return 0;
+  qp->bytes = current;
+  return 0;
 }
 
 /**
@@ -181,58 +175,57 @@ int8_t circle::internal_queue_extend(circle::internal_queue_t* qp, size_t new_si
  *
  * @return a positive number on success, a negative one on failure.
  */
-int8_t circle::internal_queue_push(circle::internal_queue_t* qp, const std::vector<uint8_t>& content)
-{
-    /* TODO: check that real_len fits within uint32_t */
-    size_t real_len = content.size();
-    uint32_t len = (uint32_t) real_len;
+int8_t circle::internal_queue_push(circle::internal_queue_t *qp,
+                                   const std::vector<uint8_t> &content) {
+  /* TODO: check that real_len fits within uint32_t */
+  size_t real_len = content.size();
+  uint32_t len = (uint32_t)real_len;
 
-    if(len <= 0) {
-        LOG(circle::LOG_ERR, "Attempted to push an empty string onto a queue.");
-        return -1;
+  if (len <= 0) {
+    LOG(circle::LOG_ERR, "Attempted to push an empty string onto a queue.");
+    return -1;
+  }
+
+  if (len > CIRCLE_MAX_STRING_LEN) {
+    LOG(circle::LOG_ERR,
+        "Attempted to push a value that was larger than expected.");
+    return -1;
+  }
+
+  if (qp->count + 1 > qp->str_count) {
+    LOG(circle::LOG_DBG, "Extending string array by 4096.");
+
+    if (circle::internal_queue_str_extend(qp, qp->count + 1) < 0) {
+      return -1;
     }
+  }
 
-    if(len > CIRCLE_MAX_STRING_LEN) {
-        LOG(circle::LOG_ERR, \
-            "Attempted to push a value that was larger than expected.");
-        return -1;
+  size_t new_bytes = (size_t)(qp->head + len) * sizeof(char);
+
+  if (new_bytes > qp->bytes) {
+    LOG(circle::LOG_DBG, "The queue is not large enough to add another value.");
+
+    if (circle::internal_queue_extend(qp, new_bytes) < 0) {
+      return -1;
     }
+  }
 
-    if(qp->count + 1 > qp->str_count) {
-        LOG(circle::LOG_DBG, "Extending string array by 4096.");
+  /* Set our write location to the end of the current strings array. */
+  qp->strings[qp->count] = qp->head;
 
-        if(circle::internal_queue_str_extend(qp, qp->count + 1) < 0) {
-            return -1;
-        }
-    }
+  /* Copy the string. */
+  memcpy(qp->base + qp->head, reinterpret_cast<const char *>(&content[0]), len);
 
-    size_t new_bytes = (size_t)(qp->head + len) * sizeof(char);
+  /*
+   * Make head point to the character after the string (strlen doesn't
+   * include a trailing null).
+   */
+  qp->head += len;
 
-    if(new_bytes > qp->bytes) {
-        LOG(circle::LOG_DBG, \
-            "The queue is not large enough to add another value.");
+  /* Make the head point to the next available memory */
+  qp->count++;
 
-        if(circle::internal_queue_extend(qp, new_bytes) < 0) {
-            return -1;
-        }
-    }
-
-    /* Set our write location to the end of the current strings array. */
-    qp->strings[qp->count] = qp->head;
-
-    /* Copy the string. */
-    memcpy(qp->base + qp->head, reinterpret_cast<const char*>(&content[0]), len);
-
-    /*
-     * Make head point to the character after the string (strlen doesn't
-     * include a trailing null).
-     */
-    qp->head += len;
-
-    /* Make the head point to the next available memory */
-    qp->count++;
-
-    return 0;
+  return 0;
 }
 
 /**
@@ -243,27 +236,27 @@ int8_t circle::internal_queue_push(circle::internal_queue_t* qp, const std::vect
  *
  * @return a positive value on success, a negative one otherwise.
  */
-int8_t circle::internal_queue_pop(circle::internal_queue_t* qp, std::vector<uint8_t>& content)
-{
-    if(!qp) {
-        LOG(circle::LOG_ERR, "Attempted to pop from an invalid queue.");
-        return -1;
-    }
+int8_t circle::internal_queue_pop(circle::internal_queue_t *qp,
+                                  std::vector<uint8_t> &content) {
+  if (!qp) {
+    LOG(circle::LOG_ERR, "Attempted to pop from an invalid queue.");
+    return -1;
+  }
 
-    if(qp->count < 1) {
-        LOG(circle::LOG_DBG, "Attempted to pop from an empty queue.");
-        return -1;
-    }
+  if (qp->count < 1) {
+    LOG(circle::LOG_DBG, "Attempted to pop from an empty queue.");
+    return -1;
+  }
 
-    /* Copy last element into str */
-    uintptr_t current = qp->strings[qp->count - 1];
-    size_t len = qp->head - current;
-    content.resize(len);
-    memcpy(reinterpret_cast<uint8_t*>(&content[0]), qp->base + current, len);
-    qp->head = current;
-    qp->count--;
+  /* Copy last element into str */
+  uintptr_t current = qp->strings[qp->count - 1];
+  size_t len = qp->head - current;
+  content.resize(len);
+  memcpy(reinterpret_cast<uint8_t *>(&content[0]), qp->base + current, len);
+  qp->head = current;
+  qp->count--;
 
-    return 0;
+  return 0;
 }
 
 /**
@@ -274,59 +267,57 @@ int8_t circle::internal_queue_pop(circle::internal_queue_t* qp, std::vector<uint
  *
  * @return a positive value on success, a negative one otherwise.
  */
-int8_t circle::internal_queue_read(circle::internal_queue_t* qp, int rank)
-{
-    if(!qp) {
-        LOG(circle::LOG_ERR, "Libcircle queue not initialized.");
-        return -1;
+int8_t circle::internal_queue_read(circle::internal_queue_t *qp, int rank) {
+  if (!qp) {
+    LOG(circle::LOG_ERR, "Libcircle queue not initialized.");
+    return -1;
+  }
+
+  LOG(circle::LOG_DBG, "Reading from checkpoint file %d.", rank);
+
+  if (qp->count != 0) {
+    LOG(circle::LOG_WARN,
+        "Reading items from checkpoint file into non-empty work queue.");
+  }
+
+  char filename[256];
+  sprintf(filename, "circle%d.txt", rank);
+
+  LOG(circle::LOG_DBG, "Attempting to open %s.", filename);
+
+  FILE *checkpoint_file = fopen(filename, "r");
+
+  if (checkpoint_file == NULL) {
+    LOG(circle::LOG_ERR, "Unable to open checkpoint file %s", filename);
+    return -1;
+  }
+
+  LOG(circle::LOG_DBG, "Checkpoint file opened.");
+
+  uint32_t len = 0;
+  char str[CIRCLE_MAX_STRING_LEN];
+
+  while (fgets(str, CIRCLE_MAX_STRING_LEN, checkpoint_file) != NULL) {
+    /* TODO: check that real_len fits within uint32_t */
+    size_t real_len = strlen(str);
+    len = (uint32_t)real_len;
+
+    if (len > 0) {
+      str[len - 1] = '\0';
+    } else {
+      continue;
     }
 
-    LOG(circle::LOG_DBG, "Reading from checkpoint file %d.", rank);
-
-    if(qp->count != 0) {
-        LOG(circle::LOG_WARN, \
-            "Reading items from checkpoint file into non-empty work queue.");
+    std::vector<uint8_t> content(str, str + len);
+    if (circle::internal_queue_push(qp, content) < 0) {
+      LOG(circle::LOG_ERR, "Failed to push element on queue \"%s\"", str);
     }
 
-    char filename[256];
-    sprintf(filename, "circle%d.txt", rank);
+    LOG(circle::LOG_DBG, "Pushed %s onto queue.", str);
+  }
 
-    LOG(circle::LOG_DBG, "Attempting to open %s.", filename);
-
-    FILE* checkpoint_file = fopen(filename, "r");
-
-    if(checkpoint_file == NULL) {
-        LOG(circle::LOG_ERR, "Unable to open checkpoint file %s", filename);
-        return -1;
-    }
-
-    LOG(circle::LOG_DBG, "Checkpoint file opened.");
-
-    uint32_t len = 0;
-    char str[CIRCLE_MAX_STRING_LEN];
-
-    while(fgets(str, CIRCLE_MAX_STRING_LEN, checkpoint_file) != NULL) {
-        /* TODO: check that real_len fits within uint32_t */
-        size_t real_len = strlen(str);
-        len = (uint32_t) real_len;
-
-        if(len > 0) {
-            str[len - 1] = '\0';
-        }
-        else {
-            continue;
-        }
-
-	std::vector<uint8_t> content(str, str + len);
-        if(circle::internal_queue_push(qp, content) < 0) {
-            LOG(circle::LOG_ERR, "Failed to push element on queue \"%s\"", str);
-        }
-
-        LOG(circle::LOG_DBG, "Pushed %s onto queue.", str);
-    }
-
-    int fclose_rc = fclose(checkpoint_file);
-    return (int8_t) fclose_rc;
+  int fclose_rc = fclose(checkpoint_file);
+  return (int8_t)fclose_rc;
 }
 
 /**
@@ -337,40 +328,38 @@ int8_t circle::internal_queue_read(circle::internal_queue_t* qp, int rank)
  *
  * @return a positive value on success, negative otherwise.
  */
-int8_t circle::internal_queue_write(circle::internal_queue_t* qp, int rank)
-{
-    LOG(circle::LOG_INFO, \
-        "Writing checkpoint file with %d elements.", qp->count);
+int8_t circle::internal_queue_write(circle::internal_queue_t *qp, int rank) {
+  LOG(circle::LOG_INFO, "Writing checkpoint file with %d elements.", qp->count);
 
-    if(qp->count == 0) {
-        return 0;
+  if (qp->count == 0) {
+    return 0;
+  }
+
+  char filename[256];
+  sprintf(filename, "circle%d.txt", rank);
+  FILE *checkpoint_file = fopen(filename, "w");
+
+  if (checkpoint_file == NULL) {
+    LOG(circle::LOG_ERR, "Unable to open checkpoint file %s", filename);
+    return -1;
+  }
+
+  while (qp->count > 0) {
+    std::vector<uint8_t> content;
+    if (circle::internal_queue_pop(qp, content) < 0) {
+      LOG(circle::LOG_ERR, "Failed to pop item off queue.");
+      return -1;
     }
 
-    char filename[256];
-    sprintf(filename, "circle%d.txt", rank);
-    FILE* checkpoint_file = fopen(filename, "w");
-
-    if(checkpoint_file == NULL) {
-        LOG(circle::LOG_ERR, "Unable to open checkpoint file %s", filename);
-        return -1;
+    std::string str(content.begin(), content.end());
+    if (fprintf(checkpoint_file, "%s\n", str.c_str()) < 0) {
+      LOG(circle::LOG_ERR, "Failed to write \"%s\" to file.", str.c_str());
+      return -1;
     }
+  }
 
-    while(qp->count > 0) {
-        std::vector<uint8_t> content;
-        if(circle::internal_queue_pop(qp, content) < 0) {
-            LOG(circle::LOG_ERR, "Failed to pop item off queue.");
-            return -1;
-        }
-
-        std::string str(content.begin(), content.end());
-        if(fprintf(checkpoint_file, "%s\n", str.c_str()) < 0) {
-            LOG(circle::LOG_ERR, "Failed to write \"%s\" to file.", str.c_str());
-            return -1;
-        }
-    }
-
-    int fclose_rc = fclose(checkpoint_file);
-    return (int8_t) fclose_rc;
+  int fclose_rc = fclose(checkpoint_file);
+  return (int8_t)fclose_rc;
 }
 
 /* EOF */
