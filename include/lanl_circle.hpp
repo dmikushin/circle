@@ -91,7 +91,7 @@ class CircleImpl;
 
 } // namespace internal
 
-struct input_st {
+struct Circle {
   circle::cb create_cb;
   circle::cb process_cb;
 

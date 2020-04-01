@@ -23,7 +23,7 @@ namespace impl {
 
 extern int8_t ABORT_FLAG;
 
-extern circle::input_st INPUT_ST;
+extern circle::Circle INPUT_ST;
 
 } // namespace impl
 } // namespace circle

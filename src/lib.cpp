@@ -32,7 +32,7 @@ static char TOKEN_COMM_NAME[32] = "Libcircle Token Comm";
 namespace circle {
 namespace impl {
 
-circle::input_st INPUT_ST;
+circle::Circle INPUT_ST;
 
 } // namespace impl
 } // namespace circle
