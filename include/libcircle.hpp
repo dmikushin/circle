@@ -55,10 +55,7 @@ typedef enum loglevel {
  * The interface to the work queue. This can be accessed from within the
  * process and create work callbacks.
  */
-struct handle {
-  int8_t (*_enqueue)(const std::vector<uint8_t> &element);
-  int8_t (*_dequeue)(std::vector<uint8_t> &element);
-  uint32_t (*_local_queue_size)(void);
+class WorkQueue {
 
 public :
 
@@ -67,12 +64,14 @@ public :
 
   int dequeue(std::vector<uint8_t> &element);
   int dequeue(std::string &element);
+
+  uint32_t localQueueSize();
 };
 
 /**
  * The type for defining callbacks for create and process.
  */
-typedef void (*cb)(circle::handle *handle);
+typedef void (*cb)(circle::WorkQueue *handle);
 
 /**
  * Callbacks for initializing, executing, and obtaining final result
@@ -167,7 +166,7 @@ int8_t checkpoint(void);
  * Function to return a pointer to the handle.  Useful for threaded
  * applications. You are responsible for maintaining mutual exclusion.
  */
-handle *get_handle(void);
+WorkQueue *get_handle(void);
 
 /**
  * Call this function to initialize libcircle queues from restart files

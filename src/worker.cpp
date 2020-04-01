@@ -32,7 +32,7 @@ extern circle::input_st INPUT_ST;
 
 using namespace circle::impl;
 
-circle::handle queue_handle;
+circle::WorkQueue queue_handle;
 
 /*
  * Define as described in gethostent(3) for backwards compatibility.
@@ -78,21 +78,36 @@ static void MPI_error_handler(MPI_Comm *comm, int *err, ...) {
  * Wrapper for pushing an element on the queue
  *
  */
-static int8_t enqueue(const std::vector<uint8_t> &element) {
+int circle::WorkQueue::enqueue(const std::vector<uint8_t> &element) {
   return circle::internal_queue_push(INPUT_ST.queue, element);
+}
+
+int circle::WorkQueue::enqueue(const std::string &element)
+{
+  std::vector<uint8_t> content(element.begin(), element.end());
+  return enqueue(content);
 }
 
 /**
  * Wrapper for popping an element
  */
-static int8_t dequeue(std::vector<uint8_t> &element) {
+int circle::WorkQueue::dequeue(std::vector<uint8_t> &element)
+{
   return circle::internal_queue_pop(INPUT_ST.queue, element);
+}
+
+int circle::WorkQueue::dequeue(std::string &element)
+{
+  std::vector<uint8_t> content;
+  int result = dequeue(content);
+  std::copy(content.begin(), content.end(), element.begin());
+  return result;
 }
 
 /**
  * Wrapper for getting the local queue size
  */
-static uint32_t local_queue_size(void) {
+uint32_t circle::WorkQueue::localQueueSize(void) {
   return (uint32_t)INPUT_ST.queue->count;
 }
 
@@ -245,7 +260,7 @@ static void finalize_local_state(circle::state_st *local_state) {
  *     -# If after requesting work, this rank still doesn't have any,
  *        check for termination conditions.
  */
-static void work_loop(circle::state_st *sptr, circle::handle *q_handle) {
+static void work_loop(circle::state_st *sptr, circle::WorkQueue *q_handle) {
   int cleanup = 0;
 
   /* Loop until done, we break on normal termination or abort */
@@ -431,11 +446,6 @@ int8_t circle::worker() {
   /* Holds all worker state */
   circle::state_st local_state;
   circle::state_st *sptr = &local_state;
-
-  /* Provides an interface to the queue. */
-  queue_handle._enqueue = &enqueue;
-  queue_handle._dequeue = &dequeue;
-  queue_handle._local_queue_size = &local_queue_size;
 
   /* get MPI communicator */
   MPI_Comm comm = INPUT_ST.comm;

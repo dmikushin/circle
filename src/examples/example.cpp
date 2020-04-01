@@ -6,7 +6,7 @@ namespace fs = ghc::filesystem;
 using namespace std;
 
 /* An example of a create callback defined by your program */
-static void my_create_some_work(circle::handle *handle) {
+static void my_create_some_work(circle::WorkQueue *handle) {
   /*
    * This is where you should generate work that needs to be processed.
    * For example, if your goal is to size files on a cluster filesystem,
@@ -38,7 +38,7 @@ static void store_in_database(size_t finished_work) {
 }
 
 /* An example of a process callback defined by your program. */
-static void my_process_some_work(circle::handle *handle) {
+static void my_process_some_work(circle::WorkQueue *handle) {
   /*
    * This is where work should be processed. For example, this is where you
    * should size one of the files which was placed on the queue by your
