@@ -2,7 +2,7 @@
 
 This is a generalized fork of [LibCircle](https://github.com/hpc/libcircle) by Los Alamos folks.
 
-Circle: deploy efficient cluster map-reduce tasks without explicit use of MPI. Circle offers a simplified API for distributing embarrassingly parallel workloads among distributed-memory compute nodes. My means of Cirlce, a client application avoids comprehensive MPI deployment, yet LibCircle uses MPI runtime internally. Distributed processing and reduction is organized with callback functions. LibCircle manages a queue of work items that are dynamically assigned to work processes. Details on the algorithms used may be found at <http://dl.acm.org/citation.cfm?id=2389114>.
+Circle: deploy efficient cluster map-reduce tasks without explicit use of MPI. Circle offers a simplified API for distributing embarrassingly parallel workloads among distributed-memory compute nodes. My means of Cirlce, a client application avoids comprehensive MPI deployment, yet Circle uses MPI runtime internally. Distributed processing and reduction is organized with callback functions. Circle manages a queue of work items that are dynamically assigned to work processes. Details on the algorithms used may be found at <http://dl.acm.org/citation.cfm?id=2389114>.
 
 ## Prerequisites
 
@@ -19,7 +19,7 @@ make -j4
 
 ## Build options
 
-To enable output from libcircle (including fatal errors), call `circle::enable_logging(enum circle::LogLevel level)` with one of the following values:
+To configure logging verbosity, call `circle::enable_logging(enum circle::LogLevel level)` with one of the following values:
 
 * `LogLevel::Fatal`: fatal errors only.
 * `LogLevel::Errors`: errors and lower log levels.
