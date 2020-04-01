@@ -9,7 +9,7 @@ START_TEST(test_queue_init_free) {
   int free_result = -1;
 
   circle::internal_queue_t *q;
-  circle::init(0, NULL, circle::RuntimeDefaultFlags);
+  circle::init(0, NULL, circle::RuntimeFlags::DefaultFlags);
 
   q = circle::internal_queue_init();
   fail_if(q == NULL, "Initializing a queue failed.");
@@ -23,10 +23,10 @@ END_TEST
 
 START_TEST(test_queue_pop_empty) {
   int free_result = -1;
-  std::vector<uint8_t> result;
+  std::string result;
 
   circle::internal_queue_t *q;
-  circle::init(0, NULL, circle::RuntimeDefaultFlags);
+  circle::init(0, NULL, circle::RuntimeFlags::DefaultFlags);
 
   q = circle::internal_queue_init();
   fail_if(q == NULL, "Initializing a queue failed.");
@@ -44,16 +44,15 @@ END_TEST
 START_TEST(test_queue_single_push_pop) {
   int free_result = -1;
   const std::string test_string = "Here's a test string!";
-  std::vector<uint8_t> result;
+  std::string result;
 
   circle::internal_queue_t *q;
-  circle::init(0, NULL, circle::RuntimeDefaultFlags);
+  circle::init(0, NULL, circle::RuntimeFlags::DefaultFlags);
 
   q = circle::internal_queue_init();
   fail_if(q == NULL, "Initializing a queue failed.");
 
-  circle::internal_queue_push(
-      q, std::vector<uint8_t>(test_string.begin(), test_string.end()));
+  circle::internal_queue_push(q, test_string);
   fail_unless(q->count == 1,
               "Queue count was not correct after a single push.");
 
@@ -61,7 +60,7 @@ START_TEST(test_queue_single_push_pop) {
   fail_unless(q->count == 0,
               "Queue count was not correct after poping the last element.");
 
-  fail_unless(strcmp(test_string, result) == 0,
+  fail_unless(test_string == result,
               "Result poped from the queue does not match original.");
 
   free_result = circle::internal_queue_free(q);
@@ -73,7 +72,7 @@ END_TEST
 
 START_TEST(test_queue_multiple_push_pop) {
   int free_result = -1;
-  std::vector<uint8_t> result;
+  std::string result;
 
   const std::string test_strings[] = {
       "first test string",   "second test string", "third test string",
@@ -82,7 +81,7 @@ START_TEST(test_queue_multiple_push_pop) {
       "tenth test string"};
 
   circle::internal_queue_t *q;
-  circle::init(0, NULL, circle::RuntimeDefaultFlags);
+  circle::init(0, NULL, circle::RuntimeFlags::DefaultFlags);
 
   q = circle::internal_queue_init();
   fail_unless(q != NULL, "Initializing a queue failed.");
@@ -93,7 +92,7 @@ START_TEST(test_queue_multiple_push_pop) {
   circle::internal_queue_push(q, test_strings[1]);
   circle::internal_queue_pop(q, result);
 
-  fail_unless(strcmp(test_strings[1], result) == 0,
+  fail_unless(test_strings[1] == result,
               "The queue pop was not the expected result.");
 
   fail_unless(q->count == 0,
@@ -119,7 +118,7 @@ START_TEST(test_queue_multiple_push_pop) {
   circle::internal_queue_pop(q, result);
   circle::internal_queue_pop(q, result); // count = 0
 
-  fail_unless(strcmp(test_strings[2], result) == 0,
+  fail_unless(test_strings[2] == result,
               "The queue pop was not the expected result.");
 
   fail_unless(q->count == 0,
@@ -136,7 +135,7 @@ START_TEST(test_queue_multiple_push_pop) {
   circle::internal_queue_push(q, test_strings[5]); // count = 3
   circle::internal_queue_pop(q, result);           // count = 2
 
-  fail_unless(strcmp(test_strings[5], result) == 0,
+  fail_unless(test_strings == result,
               "The queue pop was not the expected result.");
 
   fail_unless(q->count == 2,

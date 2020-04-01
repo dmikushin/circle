@@ -39,6 +39,29 @@ circle::input_st INPUT_ST;
 
 using namespace circle::impl;
 
+int circle::handle::enqueue(const std::vector<uint8_t> &element)
+{
+	_enqueue(element);
+}
+
+int circle::handle::enqueue(const std::string &element)
+{
+	std::vector<uint8_t> content(element.begin(), element.end());
+	_enqueue(content);
+}
+
+int circle::handle::dequeue(std::vector<uint8_t> &element)
+{
+	_dequeue(element);
+}
+
+int circle::handle::dequeue(std::string &element)
+{
+	std::vector<uint8_t> content;
+	_dequeue(content);
+	std::copy(content.begin(), content.end(), element.begin());
+}
+
 /** Handle to the queue */
 extern circle::handle queue_handle;
 

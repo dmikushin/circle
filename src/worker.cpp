@@ -433,9 +433,9 @@ int8_t circle::worker() {
   circle::state_st *sptr = &local_state;
 
   /* Provides an interface to the queue. */
-  queue_handle.enqueue = &enqueue;
-  queue_handle.dequeue = &dequeue;
-  queue_handle.local_queue_size = &local_queue_size;
+  queue_handle._enqueue = &enqueue;
+  queue_handle._dequeue = &dequeue;
+  queue_handle._local_queue_size = &local_queue_size;
 
   /* get MPI communicator */
   MPI_Comm comm = INPUT_ST.comm;

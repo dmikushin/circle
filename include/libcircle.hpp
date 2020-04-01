@@ -3,6 +3,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <string>
 #include <vector>
 
 /**
@@ -54,11 +55,19 @@ typedef enum loglevel {
  * The interface to the work queue. This can be accessed from within the
  * process and create work callbacks.
  */
-typedef struct {
-  int8_t (*enqueue)(const std::vector<uint8_t> &element);
-  int8_t (*dequeue)(std::vector<uint8_t> &element);
-  uint32_t (*local_queue_size)(void);
-} handle;
+struct handle {
+  int8_t (*_enqueue)(const std::vector<uint8_t> &element);
+  int8_t (*_dequeue)(std::vector<uint8_t> &element);
+  uint32_t (*_local_queue_size)(void);
+
+public :
+
+  int enqueue(const std::vector<uint8_t> &element);
+  int enqueue(const std::string &element);
+
+  int dequeue(std::vector<uint8_t> &element);
+  int dequeue(std::string &element);
+};
 
 /**
  * The type for defining callbacks for create and process.
