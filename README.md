@@ -1,6 +1,8 @@
-# LibCircle (CMake version)
+# Circle
 
-LibCircle: deploy efficient cluster map-reduce tasks without explicit use of MPI. LibCircle offers a simplified API for distributing embarrassingly parallel workloads among distributed-memory compute nodes. My means of LibCirlce, a client application avoids comprehensive MPI deployment, yet LibCircle uses MPI runtime internally. Distributed processing and reduction is organized with callback functions. LibCircle manages a queue of work items that are dynamically assigned to work processes. Details on the algorithms used may be found at <http://dl.acm.org/citation.cfm?id=2389114>.
+This is a generalized fork of [LibCircle](https://github.com/hpc/libcircle) by Los Alamos folks.
+
+Circle: deploy efficient cluster map-reduce tasks without explicit use of MPI. Circle offers a simplified API for distributing embarrassingly parallel workloads among distributed-memory compute nodes. My means of Cirlce, a client application avoids comprehensive MPI deployment, yet LibCircle uses MPI runtime internally. Distributed processing and reduction is organized with callback functions. LibCircle manages a queue of work items that are dynamically assigned to work processes. Details on the algorithms used may be found at <http://dl.acm.org/citation.cfm?id=2389114>.
 
 ## Prerequisites
 
@@ -17,13 +19,13 @@ make -j4
 
 ## Build options
 
-To enable output from libcircle (including fatal errors), call `CIRCLE_enable_logging(enum CIRCLE_loglevel level)` with one of the following values:
+To enable output from libcircle (including fatal errors), call `circle::enable_logging(enum circle::LogLevel level)` with one of the following values:
 
-* `CIRCLE_LOG_FATAL`: fatal errors only.
-* `CIRCLE_LOG_ERR`: errors and lower log levels.
-* `CIRCLE_LOG_WARN`: warnings and lower log levels.
-* `CIRCLE_LOG_INFO`: info messages on internal operations and lower log levels.
-* `CIRCLE_LOG_DBG`: fine grained debug messages and lower log levels.
+* `LogLevel::Fatal`: fatal errors only.
+* `LogLevel::Errors`: errors and lower log levels.
+* `LogLevel::Warnings`: warnings and lower log levels.
+* `LogLevel::Info`: info messages on internal operations and lower log levels.
+* `LogLevel::Debug`: fine grained debug messages and lower log levels.
 
 ## Testing
 
@@ -63,8 +65,8 @@ The following bit flags can be OR'ed together and passed as the third
 parameter to CIRCLE_init or at anytime through CIRCLE_set_options before
 calling CIRCLE_begin:
 
-* CIRCLE_SPLIT_RANDOM - randomly divide items among processes requesting work
-* CIRCLE_SPLIT_EQUAL - equally divide items among processes requesting work
-* CIRCLE_CREATE_GLOBAL - invoke create callback on all processes, instead of just the rank 0 process
-* CIRCLE_TERM_TREE - use tree-based termination detection, instead of ring-based token passing
+* `RuntimeFlags::SplitRandom` - randomly divide items among processes requesting work
+* `RuntimeFlags::SplitEqual` - equally divide items among processes requesting work
+* `RuntimeFlags::CreateGlobal` - invoke create callback on all processes, instead of just the rank 0 process
+* `RuntimeFlags::TermTree` - use tree-based termination detection, instead of ring-based token passing
 
