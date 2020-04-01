@@ -1,7 +1,7 @@
 #ifndef LOG_H
 #define LOG_H
 
-#include "libcircle.hpp"
+#include "lanl_circle.hpp"
 
 #include <stdint.h>
 #include <stdio.h>

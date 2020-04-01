@@ -1,4 +1,4 @@
-#include "libcircle.hpp"
+#include "lanl_circle.hpp"
 #include "queue.hpp"
 #include <check.h>
 #include <stdlib.h>

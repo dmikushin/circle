@@ -1,7 +1,7 @@
 #ifndef WORKER_H
 #define WORKER_H
 
-#include "libcircle.hpp"
+#include "lanl_circle.hpp"
 #include "token.hpp"
 
 #define LIBCIRCLE_MPI_ERROR 32

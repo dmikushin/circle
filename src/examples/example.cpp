@@ -1,6 +1,6 @@
 #include <ghc/filesystem.hpp>
 #include <iostream>
-#include <libcircle.hpp>
+#include <lanl_circle.hpp>
 
 namespace fs = ghc::filesystem;
 using namespace std;

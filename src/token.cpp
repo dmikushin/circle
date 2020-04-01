@@ -11,7 +11,8 @@
 #include <stdlib.h>
 #include <sys/stat.h>
 
-#include "libcircle.hpp"
+#include "lanl_circle.hpp"
+#include "circle_impl.hpp"
 #include "log.hpp"
 #include "queue.hpp"
 #include "token.hpp"
@@ -1320,7 +1321,7 @@ void circle::send_no_work(int dest) {
 
   MPI_Request r;
   MPI_Isend(&no_work, 1, MPI_INT, dest, circle::CIRCLE_TAG_WORK_REPLY,
-            INPUT_ST.comm, &r);
+            INPUT_ST.impl->comm, &r);
   MPI_Wait(&r, MPI_STATUS_IGNORE);
 }
 

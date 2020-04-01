@@ -8,7 +8,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "lib.hpp"
 #include "queue.hpp"
 
 namespace circle {

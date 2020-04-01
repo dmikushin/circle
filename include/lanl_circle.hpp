@@ -6,6 +6,8 @@
 #include <string>
 #include <vector>
 
+#include "queue.hpp"
+
 /**
  * The maximum length of a string value which is allowed to be placed on the
  * queue structure.
@@ -82,6 +84,28 @@ typedef void (*cb_reduce_init_fn)(void);
 typedef void (*cb_reduce_op_fn)(const void *buf1, size_t size1,
                                 const void *buf2, size_t size2);
 typedef void (*cb_reduce_fini_fn)(const void *buf, size_t size);
+
+namespace internal {
+
+class CircleImpl;
+
+} // namespace internal
+
+struct input_st {
+  circle::cb create_cb;
+  circle::cb process_cb;
+
+  circle::cb_reduce_init_fn reduce_init_cb;
+  circle::cb_reduce_op_fn reduce_op_cb;
+  circle::cb_reduce_fini_fn reduce_fini_cb;
+  void *reduce_buf;
+  size_t reduce_buf_size;
+  int reduce_period;
+
+  circle::RuntimeFlags options;
+
+  internal::CircleImpl* impl;
+};
 
 /**
  *  Produce a stack trace with demangled function and method names.

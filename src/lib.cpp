@@ -6,8 +6,8 @@
 #include <mpi.h>
 #include <stdlib.h>
 
-#include "lib.hpp"
-#include "libcircle.hpp"
+#include "lanl_circle.hpp"
+#include "circle_impl.hpp"
 #include "log.hpp"
 #include "token.hpp"
 #include "worker.hpp"
@@ -64,8 +64,10 @@ int32_t circle::init(int argc, char *argv[],
    * to disable reductions by default */
   INPUT_ST.reduce_period = 0;
 
+  INPUT_ST.impl = new circle::internal::CircleImpl();
+
   /* initialize width of communication tree */
-  INPUT_ST.tree_width = 64;
+  INPUT_ST.impl->tree_width = 64;
 
   circle::set_options(user_options);
 
@@ -90,13 +92,13 @@ int32_t circle::init(int argc, char *argv[],
     must_finalize_mpi = 1;
   }
 
-  MPI_Comm_dup(MPI_COMM_WORLD, &INPUT_ST.comm);
-  MPI_Comm_set_name(INPUT_ST.comm, WORK_COMM_NAME);
-  MPI_Comm_rank(INPUT_ST.comm, &circle::global_rank);
+  MPI_Comm_dup(MPI_COMM_WORLD, &INPUT_ST.impl->comm);
+  MPI_Comm_set_name(INPUT_ST.impl->comm, WORK_COMM_NAME);
+  MPI_Comm_rank(INPUT_ST.impl->comm, &circle::global_rank);
 
-  INPUT_ST.queue = circle::internal_queue_init();
+  INPUT_ST.impl->queue = circle::internal_queue_init();
 
-  if (INPUT_ST.queue == NULL) {
+  if (INPUT_ST.impl->queue == NULL) {
     return -1;
   } else {
     return circle::global_rank;
@@ -123,7 +125,7 @@ void circle::set_options(circle::RuntimeFlags user_options) {
 /**
  * Change the width of the k-ary communication tree.
  */
-void circle::set_tree_width(int width) { INPUT_ST.tree_width = width; }
+void circle::set_tree_width(int width) { INPUT_ST.impl->tree_width = width; }
 
 /**
  * Change the number of seconds between consecutive reductions.
@@ -222,13 +224,13 @@ void circle::abort(void) { circle::bcast_abort(); }
  * itself by calling this. This should be called after all libcircle API calls.
  */
 void circle::finalize(void) {
-  circle::internal_queue_free(INPUT_ST.queue);
+  circle::internal_queue_free(INPUT_ST.impl->queue);
 
   /* free buffer holding user reduction data */
   circle::free(&INPUT_ST.reduce_buf);
 
   /* free off MPI resources and shut it down */
-  MPI_Comm_free(&INPUT_ST.comm);
+  MPI_Comm_free(&INPUT_ST.impl->comm);
 
   if (must_finalize_mpi) {
     /* finalize MPI if we initialized it */

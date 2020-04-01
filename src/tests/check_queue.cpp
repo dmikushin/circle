@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string>
 
-#include "libcircle.hpp"
+#include "lanl_circle.hpp"
 #include "queue.hpp"
 
 START_TEST(test_queue_init_free) {

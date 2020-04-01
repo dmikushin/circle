@@ -7,7 +7,7 @@
 #include <string>
 #include <vector>
 
-#include "libcircle.hpp"
+#include "lanl_circle.hpp"
 
 /**
  *  Produce a stack trace with demangled function and method names.

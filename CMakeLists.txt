@@ -27,7 +27,7 @@ file(GLOB SRCS
 
 add_library(${PROJECT_NAME} SHARED ${SRCS})
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
-target_include_directories(${PROJECT_NAME} PRIVATE ${MPI_Fortran_INCLUDE_PATH})
+target_include_directories(${PROJECT_NAME} PRIVATE ${MPI_C_INCLUDE_PATH})
 target_link_libraries(${PROJECT_NAME} ${MPI_CXX_LIBRARIES} ${MPI_C_LIBRARIES})
 
 add_executable(check_checkpoint "${CMAKE_CURRENT_SOURCE_DIR}/src/tests/check_checkpoint.cpp")

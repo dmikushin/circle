@@ -11,7 +11,7 @@
 #include <string>
 #include <unistd.h>
 
-#include "libcircle.hpp"
+#include "lanl_circle.hpp"
 #include "log.hpp"
 #include "queue.hpp"
 
