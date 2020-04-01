@@ -16,7 +16,7 @@
 FILE *circle::debug_stream;
 
 /** The current log level of library logging output. */
-enum circle::loglevel circle::debug_level;
+enum circle::LogLevel circle::debug_level;
 
 /** The rank value of the current node. */
 int32_t circle::global_rank;
@@ -56,7 +56,7 @@ circle::WorkQueue *circle::get_handle() { return &queue_handle; }
 int32_t circle::init(int argc, char *argv[],
                      circle::RuntimeFlags user_options) {
   circle::debug_stream = stdout;
-  circle::debug_level = circle::LOG_FATAL;
+  circle::debug_level = circle::LogLevel::Fatal;
 
   memset(&INPUT_ST, 0, sizeof(INPUT_ST));
 
@@ -75,14 +75,14 @@ int32_t circle::init(int argc, char *argv[],
   int mpi_initialized;
 
   if (MPI_Initialized(&mpi_initialized) != MPI_SUCCESS) {
-    LOG(circle::LOG_FATAL, "Unable to initialize MPI.");
+    LOG(circle::LogLevel::Fatal, "Unable to initialize MPI.");
     return -1;
   }
 
   if (!mpi_initialized) {
     /* not already initialized, so intialize MPI now */
     if (MPI_Init(&argc, &argv) != MPI_SUCCESS) {
-      LOG(circle::LOG_FATAL, "Unable to initialize MPI.");
+      LOG(circle::LogLevel::Fatal, "Unable to initialize MPI.");
       return -1;
     }
 
@@ -117,7 +117,7 @@ void circle::cb_create(circle::cb func) { INPUT_ST.create_cb = func; }
  */
 void circle::set_options(circle::RuntimeFlags user_options) {
   INPUT_ST.options = user_options;
-  LOG(circle::LOG_DBG, "Circle options set: %X", user_options);
+  LOG(circle::LogLevel::Debug, "Circle options set: %X", user_options);
 }
 
 /**
@@ -190,7 +190,7 @@ void circle::reduce(const void *buf, size_t size) {
     void *copy = malloc(size);
 
     if (copy == NULL) {
-      LOG(circle::LOG_FATAL,
+      LOG(circle::LogLevel::Fatal,
           "Unable to allocate %llu bytes for reduction buffer.",
           (unsigned long long)size);
       /* TODO: bail with fatal error */
@@ -243,7 +243,7 @@ void circle::finalize(void) {
  *
  * @param level the logging level that libcircle should output.
  */
-void circle::enable_logging(enum circle::loglevel level) {
+void circle::enable_logging(enum circle::LogLevel level) {
   circle::debug_level = level;
 }
 

@@ -52,7 +52,7 @@ void circle::tree_init(int rank, int ranks, int k, MPI_Comm comm,
     t->child_ranks = (int *)malloc(bytes);
 
     if (t->child_ranks == NULL) {
-      LOG(circle::LOG_FATAL, "Failed to allocate memory for list of children.");
+      LOG(circle::LogLevel::Fatal, "Failed to allocate memory for list of children.");
       MPI_Abort(comm, LIBCIRCLE_MPI_ERROR);
     }
   }
@@ -208,7 +208,7 @@ void circle::reduce_check(circle::state_st *st, int count, int cleanup) {
       } else {
         /* we're the root, print the results if we have valid data */
         if (st->reduce_buf[0] == MSG_VALID) {
-          LOG(circle::LOG_INFO, "Objects processed: %lld ...",
+          LOG(circle::LogLevel::Info, "Objects processed: %lld ...",
               st->reduce_buf[1]);
 
           /* invoke callback on root to deliver final result */
@@ -383,7 +383,7 @@ void circle::reduce_sync(circle::state_st *st, int count) {
     }
   } else {
     /* we're the root, print the results if we have valid data */
-    LOG(circle::LOG_INFO, "Objects processed: %lld (done)", st->reduce_buf[1]);
+    LOG(circle::LogLevel::Info, "Objects processed: %lld (done)", st->reduce_buf[1]);
 
     /* invoke callback on root to deliver final result */
     if (INPUT_ST.reduce_fini_cb != NULL) {
@@ -758,7 +758,7 @@ void circle::abort_reduce(circle::state_st *st) {
  * that they will know to abort.
  */
 void circle::bcast_abort(void) {
-  LOG(circle::LOG_WARN, "Libcircle abort started from %d", circle::global_rank);
+  LOG(circle::LogLevel::Warning, "Libcircle abort started from %d", circle::global_rank);
 
   /* set global abort variable, this will kick off an abort bcast
    * the next time the worker loop calls circle::abort_check */
@@ -953,7 +953,7 @@ static void token_recv(circle::state_st *st) {
   if (st->rank == 0 && token == circle::WHITE) {
     /* if rank 0 receives a white token,
      * we initiate the termination token */
-    LOG(circle::LOG_DBG, "Master has detected termination.");
+    LOG(circle::LogLevel::Debug, "Master has detected termination.");
     terminate = 1;
   } else if (token == circle::TERMINATE) {
     /* if we're not rank 0, we just look for the terminate token */
@@ -1088,7 +1088,7 @@ int8_t circle::extend_offsets(circle::state_st *st, int32_t size) {
     count += 4096;
   }
 
-  LOG(circle::LOG_DBG, "Extending offset arrays from %d to %d.",
+  LOG(circle::LogLevel::Debug, "Extending offset arrays from %d to %d.",
       st->offsets_count, count);
 
   st->offsets_recv_buf =
@@ -1097,11 +1097,11 @@ int8_t circle::extend_offsets(circle::state_st *st, int32_t size) {
   st->offsets_send_buf =
       (int *)realloc(st->offsets_send_buf, (size_t)count * sizeof(int));
 
-  LOG(circle::LOG_DBG, "Work offsets: [%p] -> [%p]",
+  LOG(circle::LogLevel::Debug, "Work offsets: [%p] -> [%p]",
       (void *)st->offsets_recv_buf,
       (void *)(st->offsets_recv_buf + ((size_t)count * sizeof(int))));
 
-  LOG(circle::LOG_DBG, "Request offsets: [%p] -> [%p]",
+  LOG(circle::LogLevel::Debug, "Request offsets: [%p] -> [%p]",
       (void *)st->offsets_send_buf,
       (void *)(st->offsets_send_buf + ((size_t)count * sizeof(int))));
 
@@ -1124,14 +1124,14 @@ static int32_t work_receive(circle::internal_queue_t *qp, circle::state_st *st,
   /* this shouldn't happen, but let's check so we don't blow out
    * memory allocation below */
   if (size <= 0) {
-    LOG(circle::LOG_FATAL, "size <= 0.");
+    LOG(circle::LogLevel::Fatal, "size <= 0.");
     MPI_Abort(comm, LIBCIRCLE_MPI_ERROR);
     return -1;
   }
 
   /* Check to see if the offset array is large enough */
   if (circle::extend_offsets(st, size) < 0) {
-    LOG(circle::LOG_ERR, "Error: Unable to extend offsets.");
+    LOG(circle::LogLevel::Error, "Error: Unable to extend offsets.");
     MPI_Abort(comm, LIBCIRCLE_MPI_ERROR);
     return -1;
   }
@@ -1146,7 +1146,7 @@ static int32_t work_receive(circle::internal_queue_t *qp, circle::state_st *st,
 
   if (items == 0) {
     /* we received 0 elements, there is no follow on message */
-    LOG(circle::LOG_DBG, "Received no work.");
+    LOG(circle::LogLevel::Debug, "Received no work.");
     st->local_no_work_received++;
     return 0;
   } else if (items == circle::PAYLOAD_ABORT) {
@@ -1166,7 +1166,7 @@ static int32_t work_receive(circle::internal_queue_t *qp, circle::state_st *st,
 
   if (new_bytes > qp->bytes) {
     if (circle::internal_queue_extend(qp, new_bytes) < 0) {
-      LOG(circle::LOG_ERR, "Error: Unable to realloc string pool.");
+      LOG(circle::LogLevel::Error, "Error: Unable to realloc string pool.");
       MPI_Abort(comm, LIBCIRCLE_MPI_ERROR);
       return -1;
     }
@@ -1181,7 +1181,7 @@ static int32_t work_receive(circle::internal_queue_t *qp, circle::state_st *st,
 
   if (count > qp->str_count) {
     if (circle::internal_queue_str_extend(qp, count) < 0) {
-      LOG(circle::LOG_ERR, "Error: Unable to realloc string array.");
+      LOG(circle::LogLevel::Error, "Error: Unable to realloc string array.");
       MPI_Abort(comm, LIBCIRCLE_MPI_ERROR);
       return -1;
     }
@@ -1196,7 +1196,7 @@ static int32_t work_receive(circle::internal_queue_t *qp, circle::state_st *st,
 
   /* double check that the base offset is valid */
   if (qp->strings[0] != 0) {
-    LOG(circle::LOG_FATAL,
+    LOG(circle::LogLevel::Fatal,
         "The base address of the queue doesn't match what it should be.");
     MPI_Abort(comm, LIBCIRCLE_MPI_ERROR);
     return -1;
@@ -1209,7 +1209,7 @@ static int32_t work_receive(circle::internal_queue_t *qp, circle::state_st *st,
   qp->head += (uintptr_t)chars;
 
   /* log number of items we received */
-  LOG(circle::LOG_DBG, "Received %d items from %d", count, source);
+  LOG(circle::LogLevel::Debug, "Received %d items from %d", count, source);
 
   /* send receipt back to source to notify we are now
    * accounting for this work */
@@ -1268,7 +1268,7 @@ int32_t circle::request_work(circle::internal_queue_t *qp, circle::state_st *st,
       return rc;
     }
 
-    LOG(circle::LOG_DBG, "Sending work request to %d...", source);
+    LOG(circle::LogLevel::Debug, "Sending work request to %d...", source);
 
     /* increment number of work requests for profiling */
     st->local_work_requested++;
@@ -1359,7 +1359,7 @@ static int send_work(circle::internal_queue_t *qp, circle::state_st *st,
 
   /* Check to see if the offset array is large enough */
   if (circle::extend_offsets(st, numoffsets) < 0) {
-    LOG(circle::LOG_ERR, "Error: Unable to extend offsets.");
+    LOG(circle::LogLevel::Error, "Error: Unable to extend offsets.");
     return -1;
   }
 
@@ -1392,7 +1392,7 @@ static int send_work(circle::internal_queue_t *qp, circle::state_st *st,
   char *buf = qp->base + start_offset;
   MPI_Send(buf, bytes, MPI_CHAR, dest, circle::CIRCLE_TAG_WORK_REPLY, comm);
 
-  LOG(circle::LOG_DBG, "Sent %d of %d items to %d.", st->offsets_send_buf[0],
+  LOG(circle::LogLevel::Debug, "Sent %d of %d items to %d.", st->offsets_send_buf[0],
       qp->count, dest);
 
   /* subtract elements from our queue */
@@ -1416,7 +1416,7 @@ static void send_work_to_many(circle::internal_queue_t *qp,
   int i = 0;
 
   if (rcount <= 0) {
-    LOG(circle::LOG_FATAL,
+    LOG(circle::LogLevel::Fatal,
         "Something is wrong with the amount of work we think we have.");
     exit(EXIT_FAILURE);
   }
@@ -1429,7 +1429,7 @@ static void send_work_to_many(circle::internal_queue_t *qp,
   int *sizes = (int *)malloc((size_t)num_ranks * sizeof(int));
 
   if (sizes == NULL) {
-    LOG(circle::LOG_FATAL, "Failed to allocate memory for sizes.");
+    LOG(circle::LogLevel::Fatal, "Failed to allocate memory for sizes.");
     MPI_Abort(st->comm, LIBCIRCLE_MPI_ERROR);
   }
 
@@ -1459,7 +1459,7 @@ static void send_work_to_many(circle::internal_queue_t *qp,
 
   free(sizes);
 
-  LOG(circle::LOG_DBG, "Done servicing requests.");
+  LOG(circle::LogLevel::Debug, "Done servicing requests.");
 }
 
 /**
@@ -1533,7 +1533,7 @@ void circle::workreq_check(circle::internal_queue_t *qp, circle::state_st *st,
              &status);
 
     /* add rank to requestor list */
-    LOG(circle::LOG_DBG, "Received work request from %d", rank);
+    LOG(circle::LogLevel::Debug, "Received work request from %d", rank);
     requestors[rcount] = rank;
     rcount++;
   }
@@ -1568,7 +1568,7 @@ void circle::print_offsets(uint32_t *offsets, int32_t count) {
   int32_t i = 0;
 
   for (i = 0; i < count; i++) {
-    LOG(circle::LOG_DBG, "\t[%d] %d", i, offsets[i]);
+    LOG(circle::LogLevel::Debug, "\t[%d] %d", i, offsets[i]);
   }
 }
 

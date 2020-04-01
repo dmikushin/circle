@@ -43,13 +43,14 @@ inline constexpr RuntimeFlags operator|(RuntimeFlags x, RuntimeFlags y) {
 /**
  * The various logging levels that libcircle will output.
  */
-typedef enum loglevel {
-  LOG_FATAL = 1,
-  LOG_ERR = 2,
-  LOG_WARN = 3,
-  LOG_INFO = 4,
-  LOG_DBG = 5
-} loglevel;
+enum class LogLevel : unsigned {
+  None = 0,
+  Fatal = 1,
+  Error = 2,
+  Warning = 3,
+  Info = 4,
+  Debug = 5
+};
 
 /**
  * The interface to the work queue. This can be accessed from within the
@@ -183,7 +184,7 @@ void finalize(void);
 /**
  * Define the detail of logging that libcircle should output.
  */
-void enable_logging(enum loglevel level);
+void enable_logging(enum LogLevel level);
 
 /**
  * Returns an elapsed time on the calling processor for benchmarking purposes.

@@ -59,14 +59,14 @@ static void MPI_error_handler(MPI_Comm *comm, int *err, ...) {
   MPI_Comm_get_name(*comm, name, &namelen);
 
   if (*err == LIBCIRCLE_MPI_ERROR) {
-    LOG(circle::LOG_ERR, "Libcircle received abort signal, checkpointing.");
+    LOG(circle::LogLevel::Error, "Libcircle received abort signal, checkpointing.");
   } else {
     char error[MPI_MAX_ERROR_STRING];
     int error_len = 0;
     MPI_Error_string(*err, error, &error_len);
-    LOG(circle::LOG_ERR, "MPI Error in Comm [%s]: %s", name, error);
-    LOG(circle::LOG_ERR, "Backtrace:\n%s\n", backtrace);
-    LOG(circle::LOG_ERR, "Libcircle received MPI error, checkpointing.");
+    LOG(circle::LogLevel::Error, "MPI Error in Comm [%s]: %s", name, error);
+    LOG(circle::LogLevel::Error, "Backtrace:\n%s\n", backtrace);
+    LOG(circle::LogLevel::Error, "Libcircle received MPI error, checkpointing.");
   }
 
   circle::checkpoint();
@@ -303,7 +303,7 @@ static void work_loop(circle::state_st *sptr, circle::WorkQueue *q_handle) {
 
       if (term_status == circle::TERMINATE) {
         /* got the terminate signal, break the loop */
-        LOG(circle::LOG_DBG, "Received termination signal.");
+        LOG(circle::LogLevel::Debug, "Received termination signal.");
         break;
       }
     }
@@ -466,30 +466,30 @@ int8_t circle::worker() {
   /* print settings of some runtime tunables */
   if ((INPUT_ST.options & circle::RuntimeFlags::SplitEqual) !=
       circle::RuntimeFlags::None) {
-    LOG(circle::LOG_DBG, "Using equalized load splitting.");
+    LOG(circle::LogLevel::Debug, "Using equalized load splitting.");
   }
 
   if ((INPUT_ST.options & circle::RuntimeFlags::SplitRandom) !=
       circle::RuntimeFlags::None) {
-    LOG(circle::LOG_DBG, "Using randomized load splitting.");
+    LOG(circle::LogLevel::Debug, "Using randomized load splitting.");
   }
 
   if ((INPUT_ST.options & circle::RuntimeFlags::CreateGlobal) !=
       circle::RuntimeFlags::None) {
-    LOG(circle::LOG_DBG, "Create callback enabled on all ranks.");
+    LOG(circle::LogLevel::Debug, "Create callback enabled on all ranks.");
   } else {
-    LOG(circle::LOG_DBG, "Create callback enabled on rank 0 only.");
+    LOG(circle::LogLevel::Debug, "Create callback enabled on rank 0 only.");
   }
 
   if ((INPUT_ST.options & circle::RuntimeFlags::TermTree) !=
       circle::RuntimeFlags::None) {
-    LOG(circle::LOG_DBG, "Using tree termination detection.");
+    LOG(circle::LogLevel::Debug, "Using tree termination detection.");
   } else {
-    LOG(circle::LOG_DBG, "Using circle termination detection.");
+    LOG(circle::LogLevel::Debug, "Using circle termination detection.");
   }
 
-  LOG(circle::LOG_DBG, "Tree width: %d", INPUT_ST.tree_width);
-  LOG(circle::LOG_DBG, "Reduce period (secs): %d", INPUT_ST.reduce_period);
+  LOG(circle::LogLevel::Debug, "Tree width: %d", INPUT_ST.tree_width);
+  LOG(circle::LogLevel::Debug, "Reduce period (secs): %d", INPUT_ST.reduce_period);
 
   /**********************************
    * this is where the heavy lifting is done
@@ -516,7 +516,7 @@ int8_t circle::worker() {
    **********************************/
 
   /* optionally print summary info */
-  if (circle::debug_level >= circle::LOG_INFO) {
+  if (circle::debug_level >= circle::LogLevel::Info) {
     /* allocate memory for summary data */
     size_t array_elems = (size_t)size;
     uint32_t *total_objects_processed_array =
@@ -542,17 +542,17 @@ int8_t circle::worker() {
     if (rank == 0) {
       int i;
       for (i = 0; i < size; i++) {
-        LOG(circle::LOG_INFO, "Rank %d\tObjects Processed %d\t%0.3lf%%", i,
+        LOG(circle::LogLevel::Info, "Rank %d\tObjects Processed %d\t%0.3lf%%", i,
             total_objects_processed_array[i],
             (double)total_objects_processed_array[i] /
                 (double)total_objects_processed * 100.0);
-        LOG(circle::LOG_INFO, "Rank %d\tWork requests: %d", i,
+        LOG(circle::LogLevel::Info, "Rank %d\tWork requests: %d", i,
             total_work_requests_array[i]);
-        LOG(circle::LOG_INFO, "Rank %d\tNo work replies: %d", i,
+        LOG(circle::LogLevel::Info, "Rank %d\tNo work replies: %d", i,
             total_no_work_received_array[i]);
       }
 
-      LOG(circle::LOG_INFO, "Total Objects Processed: %d",
+      LOG(circle::LogLevel::Info, "Total Objects Processed: %d",
           total_objects_processed);
     }
 

@@ -63,7 +63,7 @@ int main(int argc, char *argv[]) {
    */
   int rank = circle::init(argc, argv, circle::RuntimeFlags::DefaultFlags);
 
-  circle::enable_logging(circle::LOG_INFO);
+  circle::enable_logging(circle::LogLevel::Info);
 
   /*
    * Processing and creating work is done through callbacks. Here's how we tell

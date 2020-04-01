@@ -21,7 +21,7 @@ namespace circle {
   } while (0)
 
 extern FILE *debug_stream;
-extern enum circle::loglevel debug_level;
+extern enum circle::LogLevel debug_level;
 extern int32_t global_rank;
 
 } // namespace circle
