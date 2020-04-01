@@ -9,24 +9,24 @@
 namespace circle {
 
 typedef struct input_st {
-    circle::cb create_cb;
-    circle::cb process_cb;
+  circle::cb create_cb;
+  circle::cb process_cb;
 
-    circle::cb_reduce_init_fn reduce_init_cb;
-    circle::cb_reduce_op_fn   reduce_op_cb;
-    circle::cb_reduce_fini_fn reduce_fini_cb;
-    void*  reduce_buf;
-    size_t reduce_buf_size;
-    int reduce_period;
+  circle::cb_reduce_init_fn reduce_init_cb;
+  circle::cb_reduce_op_fn reduce_op_cb;
+  circle::cb_reduce_fini_fn reduce_fini_cb;
+  void *reduce_buf;
+  size_t reduce_buf_size;
+  int reduce_period;
 
-    MPI_Comm comm;
+  MPI_Comm comm;
 
-    circle::RuntimeFlags options;
+  circle::RuntimeFlags options;
 
-    /* width of internal communication k-ary tree */
-    int tree_width;
+  /* width of internal communication k-ary tree */
+  int tree_width;
 
-    circle::internal_queue_t* queue;
+  circle::internal_queue_t *queue;
 } input_st;
 
 } // namespace circle

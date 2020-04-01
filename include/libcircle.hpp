@@ -21,37 +21,33 @@ namespace circle {
  * Run time flags for the behavior of splitting work.
  */
 enum class RuntimeFlags : unsigned {
-    None         = 0,
-    SplitRandom  = 1 << 0,        /* Split work randomly. */
-    SplitEqual   = 1 << 1,        /* Split work evenly */
-    CreateGlobal = 1 << 2,        /* Call create callback on all procs */
-    TermTree     = 1 << 3,        /* Use tree-based termination */
-    DefaultFlags = SplitEqual,    /* Default behavior is random work stealing */
+  None = 0,
+  SplitRandom = 1 << 0,      /* Split work randomly. */
+  SplitEqual = 1 << 1,       /* Split work evenly */
+  CreateGlobal = 1 << 2,     /* Call create callback on all procs */
+  TermTree = 1 << 3,         /* Use tree-based termination */
+  DefaultFlags = SplitEqual, /* Default behavior is random work stealing */
 };
 
-inline constexpr RuntimeFlags
-operator&(RuntimeFlags x, RuntimeFlags y)
-{
-    return static_cast<RuntimeFlags>
-        (static_cast<unsigned>(x) & static_cast<unsigned>(y));
+inline constexpr RuntimeFlags operator&(RuntimeFlags x, RuntimeFlags y) {
+  return static_cast<RuntimeFlags>(static_cast<unsigned>(x) &
+                                   static_cast<unsigned>(y));
 }
 
-inline constexpr RuntimeFlags
-operator|(RuntimeFlags x, RuntimeFlags y)
-{
-    return static_cast<RuntimeFlags>
-        (static_cast<unsigned>(x) | static_cast<unsigned>(y));
+inline constexpr RuntimeFlags operator|(RuntimeFlags x, RuntimeFlags y) {
+  return static_cast<RuntimeFlags>(static_cast<unsigned>(x) |
+                                   static_cast<unsigned>(y));
 }
 
 /**
  * The various logging levels that libcircle will output.
  */
 typedef enum loglevel {
-    LOG_FATAL = 1,
-    LOG_ERR   = 2,
-    LOG_WARN  = 3,
-    LOG_INFO  = 4,
-    LOG_DBG   = 5
+  LOG_FATAL = 1,
+  LOG_ERR = 2,
+  LOG_WARN = 3,
+  LOG_INFO = 4,
+  LOG_DBG = 5
 } loglevel;
 
 /**
@@ -59,34 +55,35 @@ typedef enum loglevel {
  * process and create work callbacks.
  */
 typedef struct {
-    int8_t (*enqueue)(const std::vector<uint8_t>& element);
-    int8_t (*dequeue)(std::vector<uint8_t>& element);
-    uint32_t (*local_queue_size)(void);
+  int8_t (*enqueue)(const std::vector<uint8_t> &element);
+  int8_t (*dequeue)(std::vector<uint8_t> &element);
+  uint32_t (*local_queue_size)(void);
 } handle;
 
 /**
  * The type for defining callbacks for create and process.
  */
-typedef void (*cb)(circle::handle* handle);
+typedef void (*cb)(circle::handle *handle);
 
 /**
  * Callbacks for initializing, executing, and obtaining final result
  * of a reduction
  */
 typedef void (*cb_reduce_init_fn)(void);
-typedef void (*cb_reduce_op_fn)(const void* buf1, size_t size1, const void* buf2, size_t size2);
-typedef void (*cb_reduce_fini_fn)(const void* buf, size_t size);
+typedef void (*cb_reduce_op_fn)(const void *buf1, size_t size1,
+                                const void *buf2, size_t size2);
+typedef void (*cb_reduce_fini_fn)(const void *buf, size_t size);
 
 /**
  *  Produce a stack trace with demangled function and method names.
  */
-const char* backtrace(int skip);
+const char *backtrace(int skip);
 
 /**
  * Initialize internal state needed by libcircle. This should be called before
  * any other libcircle API call. This returns the MPI rank value.
  */
-int init(int argc, char* argv[], circle::RuntimeFlags options);
+int init(int argc, char *argv[], circle::RuntimeFlags options);
 
 /**
  * Change run time flags
@@ -138,7 +135,7 @@ void cb_reduce_fini(circle::cb_reduce_fini_fn);
  * and intermediate reduction callbacks, libcircle makes a copy
  * of the data so the user buffer can be immediately released.
  */
-void reduce(const void* buf, size_t size);
+void reduce(const void *buf, size_t size);
 
 /**
  * Once you've defined and told libcircle about your callbacks, use this to
@@ -158,10 +155,10 @@ void abort(void);
 int8_t checkpoint(void);
 
 /**
-  * Function to return a pointer to the handle.  Useful for threaded applications.
-  * You are responsible for maintaining mutual exclusion.
-  */
-handle* get_handle(void);
+ * Function to return a pointer to the handle.  Useful for threaded
+ * applications. You are responsible for maintaining mutual exclusion.
+ */
+handle *get_handle(void);
 
 /**
  * Call this function to initialize libcircle queues from restart files

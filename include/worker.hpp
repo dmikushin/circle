@@ -9,21 +9,19 @@
 namespace circle {
 
 int8_t worker(void);
-void reset_request_vector(circle::state_st* st);
+void reset_request_vector(circle::state_st *st);
 
 /* provides address of pointer, and if value of pointer is not NULL,
  * frees memory and sets pointer value to NULL */
-template<typename T>
-void free(T** pptr)
-{
-    if(pptr != NULL) {
-        if(*pptr != NULL) {
-            ::free(*pptr);
-            *pptr = NULL;
-        }
+template <typename T> void free(T **pptr) {
+  if (pptr != NULL) {
+    if (*pptr != NULL) {
+      ::free(*pptr);
+      *pptr = NULL;
     }
+  }
 
-    return;
+  return;
 }
 
 } // namespace circle
