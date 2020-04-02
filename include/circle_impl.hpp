@@ -25,6 +25,11 @@ public : // TODO remove
   friend class circle::Circle;
 };
 
+/**
+ *  A struct which holds a reference to all input given through the API.
+ */
+extern circle::Circle circle;
+
 } // namespace internal
 } // namespace circle
 

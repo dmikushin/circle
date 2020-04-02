@@ -133,7 +133,7 @@ int main(int argc, char *argv[]) {
    * Do partial computations with libcircle.
    */
   int rank = circle::init(argc, argv, circle::RuntimeFlags::DefaultFlags);
-  circle::enable_logging(circle::LogLevel::Info);
+  //circle::enable_logging(circle::LogLevel::Info);
   circle::cb_create(&my_create_some_work);
   circle::cb_process(&my_process_some_work);
 
@@ -148,7 +148,7 @@ int main(int argc, char *argv[]) {
    * Specify time period between consecutive reductions.
    * Here we set a time period of 10 seconds.
    */
-  circle::set_reduce_period(10);
+  //circle::set_reduce_period(10);
 
   circle::begin();
   circle::finalize();

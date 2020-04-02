@@ -11,7 +11,7 @@ namespace circle {
 
 #define LOG(level, ...)                                                        \
   do {                                                                         \
-    if (level <= circle::debug_level) {                                        \
+    if (level <= circle::internal::circle.logLevel) {                              \
       fprintf(circle::debug_stream, "%d:%d:%s:%d:", (int)time(NULL),           \
               circle::global_rank, __FILE__, __LINE__);                        \
       fprintf(circle::debug_stream, __VA_ARGS__);                              \
@@ -21,7 +21,6 @@ namespace circle {
   } while (0)
 
 extern FILE *debug_stream;
-extern enum circle::LogLevel debug_level;
 extern int32_t global_rank;
 
 } // namespace circle

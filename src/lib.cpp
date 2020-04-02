@@ -15,9 +15,6 @@
 /** The debug stream for all logging messages. */
 FILE *circle::debug_stream;
 
-/** The current log level of library logging output. */
-enum circle::LogLevel circle::debug_level;
-
 /** The rank value of the current node. */
 int32_t circle::global_rank;
 
@@ -27,17 +24,6 @@ static int must_finalize_mpi;
 /** Communicator names **/
 static char WORK_COMM_NAME[32] = "Libcircle Work Comm";
 static char TOKEN_COMM_NAME[32] = "Libcircle Token Comm";
-
-/** A struct which holds a reference to all input given through the API. */
-namespace circle {
-namespace impl {
-
-circle::Circle circle;
-
-} // namespace impl
-} // namespace circle
-
-using namespace circle::impl;
 
 /** Handle to the queue */
 extern circle::WorkQueue queue_handle;
@@ -55,21 +41,21 @@ circle::WorkQueue *circle::get_handle() { return &queue_handle; }
  */
 int32_t circle::init(int argc, char *argv[],
                      circle::RuntimeFlags runtimeFlags) {
-  circle::debug_stream = stdout;
-  circle::debug_level = circle::LogLevel::Fatal;
+  memset(&circle::internal::circle, 0, sizeof(circle::internal::circle));
 
-  memset(&circle::impl::circle, 0, sizeof(circle::impl::circle));
+  circle::debug_stream = stdout;
+  circle::internal::circle.logLevel = circle::LogLevel::Fatal;
 
   /* initialize reduction period to 0 seconds
    * to disable reductions by default */
-  circle::impl::circle.reduce_period = 0;
+  circle::internal::circle.reduce_period = 0;
 
-  circle::impl::circle.impl = new circle::internal::CircleImpl();
+  circle::internal::circle.impl = new circle::internal::CircleImpl();
 
   /* initialize width of communication tree */
-  circle::impl::circle.impl->tree_width = 64;
+  circle::internal::circle.impl->tree_width = 64;
 
-  circle::impl::circle.setRuntimeFlags(runtimeFlags);
+  circle::internal::circle.setRuntimeFlags(runtimeFlags);
 
   /* determine whether we need to initialize MPI,
    * and remember if we did so we finalize later */
@@ -92,13 +78,13 @@ int32_t circle::init(int argc, char *argv[],
     must_finalize_mpi = 1;
   }
 
-  MPI_Comm_dup(MPI_COMM_WORLD, &circle::impl::circle.impl->comm);
-  MPI_Comm_set_name(circle::impl::circle.impl->comm, WORK_COMM_NAME);
-  MPI_Comm_rank(circle::impl::circle.impl->comm, &circle::global_rank);
+  MPI_Comm_dup(MPI_COMM_WORLD, &circle::internal::circle.impl->comm);
+  MPI_Comm_set_name(circle::internal::circle.impl->comm, WORK_COMM_NAME);
+  MPI_Comm_rank(circle::internal::circle.impl->comm, &circle::global_rank);
 
-  circle::impl::circle.impl->queue = circle::internal_queue_init();
+  circle::internal::circle.impl->queue = circle::internal_queue_init();
 
-  if (circle::impl::circle.impl->queue == NULL) {
+  if (circle::internal::circle.impl->queue == NULL) {
     return -1;
   } else {
     return circle::global_rank;
@@ -112,7 +98,7 @@ int32_t circle::init(int argc, char *argv[],
  *
  * @param func the callback to be used in the creation stage.
  */
-void circle::cb_create(circle::cb func) { circle::impl::circle.create_cb = func; }
+void circle::cb_create(circle::cb func) { circle::internal::circle.create_cb = func; }
 
 /**
  * Change run time flags
@@ -125,12 +111,12 @@ void circle::Circle::setRuntimeFlags(circle::RuntimeFlags runtimeFlags_) {
 /**
  * Change the width of the k-ary communication tree.
  */
-void circle::set_tree_width(int width) { circle::impl::circle.impl->tree_width = width; }
+void circle::Circle::setTreeWidth(int width) { impl->tree_width = width; }
 
 /**
  * Change the number of seconds between consecutive reductions.
  */
-void circle::set_reduce_period(int secs) { circle::impl::circle.reduce_period = secs; }
+void circle::Circle::setReducePeriod(int secs) { reduce_period = secs; }
 
 /**
  * After you give libcircle a way to create work, you need to tell it how that
@@ -139,11 +125,11 @@ void circle::set_reduce_period(int secs) { circle::impl::circle.reduce_period = 
  * @param func the callback to be used in the process stage.
  */
 void circle::cb_process(circle::cb func) {
-  if (circle::impl::circle.create_cb == NULL) {
-    circle::impl::circle.create_cb = func;
+  if (circle::internal::circle.create_cb == NULL) {
+    circle::internal::circle.create_cb = func;
   }
 
-  circle::impl::circle.process_cb = func;
+  circle::internal::circle.process_cb = func;
 }
 
 /**
@@ -153,7 +139,7 @@ void circle::cb_process(circle::cb func) {
  * @param func the callback to be used to provide data for reduction.
  */
 void circle::cb_reduce_init(circle::cb_reduce_init_fn func) {
-  circle::impl::circle.reduce_init_cb = func;
+  circle::internal::circle.reduce_init_cb = func;
 }
 
 /**
@@ -163,7 +149,7 @@ void circle::cb_reduce_init(circle::cb_reduce_init_fn func) {
  * @param func the callback to be used to combine data during reduction.
  */
 void circle::cb_reduce_op(circle::cb_reduce_op_fn func) {
-  circle::impl::circle.reduce_op_cb = func;
+  circle::internal::circle.reduce_op_cb = func;
 }
 
 /**
@@ -173,7 +159,7 @@ void circle::cb_reduce_op(circle::cb_reduce_op_fn func) {
  * @param func the callback to be provide reduction output on root.
  */
 void circle::cb_reduce_fini(circle::cb_reduce_fini_fn func) {
-  circle::impl::circle.reduce_fini_cb = func;
+  circle::internal::circle.reduce_fini_cb = func;
 }
 
 /**
@@ -184,7 +170,7 @@ void circle::cb_reduce_fini(circle::cb_reduce_fini_fn func) {
  */
 void circle::reduce(const void *buf, size_t size) {
   /* free existing buffer memory if we have any */
-  circle::free(&circle::impl::circle.reduce_buf);
+  circle::free(&circle::internal::circle.reduce_buf);
 
   /* allocate memory to copy reduction data */
   if (size > 0) {
@@ -203,8 +189,8 @@ void circle::reduce(const void *buf, size_t size) {
     memcpy(copy, buf, size);
 
     /* store buffer on input state */
-    circle::impl::circle.reduce_buf = copy;
-    circle::impl::circle.reduce_buf_size = size;
+    circle::internal::circle.reduce_buf = copy;
+    circle::internal::circle.reduce_buf_size = size;
   }
 }
 
@@ -224,13 +210,13 @@ void circle::abort(void) { circle::bcast_abort(); }
  * itself by calling this. This should be called after all libcircle API calls.
  */
 void circle::finalize(void) {
-  circle::internal_queue_free(circle::impl::circle.impl->queue);
+  circle::internal_queue_free(circle::internal::circle.impl->queue);
 
   /* free buffer holding user reduction data */
-  circle::free(&circle::impl::circle.reduce_buf);
+  circle::free(&circle::internal::circle.reduce_buf);
 
   /* free off MPI resources and shut it down */
-  MPI_Comm_free(&circle::impl::circle.impl->comm);
+  MPI_Comm_free(&circle::internal::circle.impl->comm);
 
   if (must_finalize_mpi) {
     /* finalize MPI if we initialized it */
@@ -245,8 +231,8 @@ void circle::finalize(void) {
  *
  * @param level the logging level that libcircle should output.
  */
-void circle::enable_logging(enum circle::LogLevel level) {
-  circle::debug_level = level;
+void circle::Circle::enableLogging(enum circle::LogLevel logLevel_) {
+  circle::internal::circle.logLevel = logLevel_;
 }
 
 /**

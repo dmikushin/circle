@@ -90,16 +90,20 @@ class CircleImpl;
 } // namespace internal
 
 struct Circle {
+
+  // TODO std::function
   circle::cb create_cb;
   circle::cb process_cb;
 
   circle::cb_reduce_init_fn reduce_init_cb;
   circle::cb_reduce_op_fn reduce_op_cb;
   circle::cb_reduce_fini_fn reduce_fini_cb;
+
+  // TODO Move to impl.
   void *reduce_buf;
   size_t reduce_buf_size;
   int reduce_period;
-
+  circle::LogLevel logLevel;
   circle::RuntimeFlags runtimeFlags;
 
   internal::CircleImpl* impl;
@@ -107,9 +111,24 @@ struct Circle {
 public :
 
   /**
+   * Define the detail of logging that libcircle should output.
+   */
+  void enableLogging(enum LogLevel level);
+
+  /**
    * Change run time flags.
    */
   void setRuntimeFlags(circle::RuntimeFlags options);
+
+  /**
+   * Change the width of the k-ary communication tree.
+   */
+  void setTreeWidth(int width);
+
+  /**
+   * Change the number of seconds between consecutive reductions.
+   */
+  void setReducePeriod(int secs);
 };
 
 /**
@@ -122,16 +141,6 @@ const char *backtrace(int skip);
  * any other libcircle API call. This returns the MPI rank value.
  */
 int init(int argc, char *argv[], circle::RuntimeFlags options);
-
-/**
- * Change the width of the k-ary communication tree.
- */
-void set_tree_width(int width);
-
-/**
- * Change the number of seconds between consecutive reductions.
- */
-void set_reduce_period(int secs);
 
 /**
  * Processing and creating work is done through callbacks. Here's how we tell
@@ -204,11 +213,6 @@ int8_t read_restarts(void);
  * itself by calling this. This should be called after all libcircle API calls.
  */
 void finalize(void);
-
-/**
- * Define the detail of logging that libcircle should output.
- */
-void enable_logging(enum LogLevel level);
 
 /**
  * Returns an elapsed time on the calling processor for benchmarking purposes.
