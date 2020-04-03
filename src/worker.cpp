@@ -23,16 +23,13 @@
 namespace circle {
 namespace internal {
 
-circle::Circle circle;
-
 int8_t ABORT_FLAG;
 
 } // namespace impl
 } // namespace circle
 
+using namespace circle;
 using namespace circle::internal;
-
-circle::WorkQueue queue_handle;
 
 /*
  * Define as described in gethostent(3) for backwards compatibility.
@@ -40,8 +37,6 @@ circle::WorkQueue queue_handle;
 #ifndef h_addr
 #define h_addr h_addr_list[0]
 #endif /* h_addr */
-
-const char *circle::backtrace(int skip);
 
 /**
  * @brief Function to be called in the event of an MPI error.
@@ -52,37 +47,41 @@ const char *circle::backtrace(int skip);
  */
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 static void MPI_error_handler(MPI_Comm *comm, int *err, ...) {
-  const char *backtrace = circle::backtrace(1);
-
+  const char *bt = backtrace(1);
+#if 0
+  // TODO Attach circle to communicator with MPI_Comm_create_keyval
   char name[MPI_MAX_OBJECT_NAME];
   int namelen;
   MPI_Comm_get_name(*comm, name, &namelen);
 
-  if (*err == LIBCIRCLE_MPI_ERROR) {
-    LOG(circle::LogLevel::Error, "Libcircle received abort signal, checkpointing.");
+  if (*err == CIRCLE_MPI_ERROR) {
+    LOG(LogLevel::Error, "Libcircle received abort signal, checkpointing.");
   } else {
     char error[MPI_MAX_ERROR_STRING];
     int error_len = 0;
     MPI_Error_string(*err, error, &error_len);
-    LOG(circle::LogLevel::Error, "MPI Error in Comm [%s]: %s", name, error);
-    LOG(circle::LogLevel::Error, "Backtrace:\n%s\n", backtrace);
-    LOG(circle::LogLevel::Error, "Libcircle received MPI error, checkpointing.");
+    LOG(LogLevel::Error, "MPI Error in Comm [%s]: %s", name, error);
+    LOG(LogLevel::Error, "Backtrace:\n%s\n", bt);
+    LOG(LogLevel::Error, "Libcircle received MPI error, checkpointing.");
   }
-
-  circle::checkpoint();
+  
+  checkpoint();
+#endif
   exit(EXIT_FAILURE);
 }
 #pragma GCC diagnostic warning "-Wunused-parameter"
 
+#if 0
+// TODO class Handle or WorkQueue
 /**
  * Wrapper for pushing an element on the queue
  *
  */
-int circle::WorkQueue::enqueue(const std::vector<uint8_t> &element) {
-  return circle::internal_queue_push(circle::internal::circle.impl->queue, element);
+int Queue::enqueue(const std::vector<uint8_t> &element) {
+  return push(parent->impl->queue, element);
 }
 
-int circle::WorkQueue::enqueue(const std::string &element)
+int Queue::enqueue(const std::string &element)
 {
   std::vector<uint8_t> content(element.begin(), element.end());
   return enqueue(content);
@@ -91,12 +90,12 @@ int circle::WorkQueue::enqueue(const std::string &element)
 /**
  * Wrapper for popping an element
  */
-int circle::WorkQueue::dequeue(std::vector<uint8_t> &element)
+int Queue::dequeue(std::vector<uint8_t> &element)
 {
-  return circle::internal_queue_pop(circle::internal::circle.impl->queue, element);
+  return pop(parent->impl->queue, element);
 }
 
-int circle::WorkQueue::dequeue(std::string &element)
+int Queue::dequeue(std::string &element)
 {
   std::vector<uint8_t> content;
   int result = dequeue(content);
@@ -107,145 +106,24 @@ int circle::WorkQueue::dequeue(std::string &element)
 /**
  * Wrapper for getting the local queue size
  */
-uint32_t circle::WorkQueue::localQueueSize(void) {
-  return (uint32_t)circle::internal::circle.impl->queue->count;
+uint32_t Queue::localQueueSize(void) {
+  return (uint32_t)count;
 }
+#endif
 
 /**
  * Call this function to read in libcircle restart files.
  */
-int8_t circle::read_restarts(void) {
-  return circle::internal_queue_read(circle::internal::circle.impl->queue, circle::global_rank);
+int8_t Worker::readRestarts() {
+  return parent->impl->queue.read(parent->getRank());
 }
 
 /**
  * Call this function to read in libcircle restart files.  Each rank
  * writes a file called circle<rank>.txt
  */
-int8_t circle::checkpoint(void) {
-  return circle::internal_queue_write(circle::internal::circle.impl->queue, circle::global_rank);
-}
-
-/**
- * Initializes all variables local to a rank
- */
-static void init_local_state(MPI_Comm comm, circle::state_st *local_state) {
-  /* get our rank and number of ranks in communicator */
-  int rank, size;
-  MPI_Comm_rank(comm, &rank);
-  MPI_Comm_size(comm, &size);
-
-  /* set rank and size in state */
-  local_state->comm = circle::internal::circle.impl->comm;
-  local_state->rank = rank;
-  local_state->size = size;
-
-  /* start the termination token on rank 0 */
-  local_state->token_is_local = 0;
-
-  if (rank == 0) {
-    local_state->token_is_local = 1;
-  }
-
-  /* identify ranks for the token ring */
-  local_state->token_src = (rank - 1 + size) % size;
-  local_state->token_dest = (rank + 1 + size) % size;
-
-  /* initialize token state */
-  local_state->token_proc = circle::WHITE;
-  local_state->token_buf = circle::BLACK;
-  local_state->token_send_req = MPI_REQUEST_NULL;
-
-  /* allocate memory for our offset arrays */
-  int32_t offsets = circle::internal::circle.impl->queue->str_count;
-  local_state->offsets_count = offsets;
-  local_state->offsets_send_buf = (int *)calloc((size_t)offsets, sizeof(int));
-  local_state->offsets_recv_buf = (int *)calloc((size_t)offsets, sizeof(int));
-
-  /* allocate array for work request */
-  size_t array_elems = (size_t)size;
-  local_state->requestors = (int *)malloc(sizeof(int) * array_elems);
-
-  /* randomize the first task we request work from */
-  local_state->seed = (unsigned)rank;
-  circle::get_next_proc(local_state);
-
-  /* initialize work request state */
-  local_state->work_requested = 0;
-
-  /* determine whether we are using tree-based or circle-based
-   * termination detection */
-  local_state->term_tree_enabled = 0;
-  if ((circle::internal::circle.runtimeFlags & circle::RuntimeFlags::TermTree) !=
-      circle::RuntimeFlags::None) {
-    local_state->term_tree_enabled = 1;
-  }
-
-  /* create our collective tree */
-  int tree_width = circle::internal::circle.impl->tree_width;
-  circle::tree_init(rank, size, tree_width, local_state->comm,
-                    &local_state->tree);
-
-  /* init state for progress reduction operations */
-  local_state->reduce_enabled = 0;
-  double secs = (double)circle::internal::circle.reduce_period;
-  if (secs > 0.0) {
-    local_state->reduce_enabled = 1;
-  }
-  local_state->reduce_time_last = MPI_Wtime();
-  local_state->reduce_time_interval = secs;
-  local_state->reduce_outstanding = 0;
-
-  /* init state for cleanup barrier operations */
-  local_state->barrier_started = 0;
-  local_state->barrier_up = 0;
-  local_state->barrier_replies = 0;
-
-  /* init state for termination allreduce operations */
-  local_state->work_outstanding = 0;
-  local_state->term_flag = 1;
-  local_state->term_up = 0;
-  local_state->term_replies = 0;
-
-  /* init state for abort broadcast tree */
-  local_state->abort_state = 0;
-  local_state->abort_outstanding = 0;
-
-  /* compute number of MPI requets we'll use in abort
-   * (parent + num_children)*2 for one isend/irecv each */
-  int num_req = local_state->tree.children;
-  if (local_state->tree.parent_rank != MPI_PROC_NULL) {
-    num_req++;
-  }
-  num_req *= 2;
-
-  local_state->abort_num_req = num_req;
-  local_state->abort_req =
-      (MPI_Request *)calloc((size_t)num_req, sizeof(MPI_Request));
-
-  int i;
-  for (i = 0; i < num_req; i++) {
-    local_state->abort_req[i] = MPI_REQUEST_NULL;
-  }
-
-  /* initalize counters */
-  local_state->local_objects_processed = 0;
-  local_state->local_work_requested = 0;
-  local_state->local_no_work_received = 0;
-
-  return;
-}
-
-/**
- * Free memory associated with state
- */
-static void finalize_local_state(circle::state_st *local_state) {
-  circle::tree_free(&local_state->tree);
-  circle::free(&local_state->abort_req);
-  circle::free(&local_state->offsets_send_buf);
-  circle::free(&local_state->offsets_recv_buf);
-  circle::free(&local_state->requestors);
-  return;
+int8_t Worker::checkpoint() {
+  return parent->impl->queue.write(parent->getRank());
 }
 
 /**
@@ -260,34 +138,34 @@ static void finalize_local_state(circle::state_st *local_state) {
  *     -# If after requesting work, this rank still doesn't have any,
  *        check for termination conditions.
  */
-static void work_loop(circle::state_st *sptr, circle::WorkQueue *q_handle) {
+void Worker::mainLoop(State *sptr) {
   int cleanup = 0;
 
   /* Loop until done, we break on normal termination or abort */
   while (1) {
     /* Check for and service work requests */
-    circle::workreq_check(circle::internal::circle.impl->queue, sptr, cleanup);
+    sptr->workreqCheck(&parent->impl->queue, cleanup);
 
     /* process any incoming work receipt messages */
-    circle::workreceipt_check(circle::internal::circle.impl->queue, sptr);
+    sptr->workreceiptCheck(&parent->impl->queue);
 
     /* check for incoming abort messages */
-    circle::abort_check(sptr, cleanup);
+    sptr->abortCheck(cleanup);
 
     /* Make progress on any outstanding reduction */
     if (sptr->reduce_enabled) {
-      circle::reduce_check(sptr, sptr->local_objects_processed, cleanup);
+      sptr->reduceCheck(sptr->local_objects_processed, cleanup);
     }
 
     /* If I have no work, request work from another rank */
-    if (circle::internal::circle.impl->queue->count == 0) {
-      circle::request_work(circle::internal::circle.impl->queue, sptr, cleanup);
+    if (parent->impl->queue.count == 0) {
+      sptr->requestWork(&parent->impl->queue, cleanup);
     }
 
     /* If I have some work and have not received a signal to
      * abort, process one work item */
-    if (circle::internal::circle.impl->queue->count > 0 && !ABORT_FLAG) {
-      (*(circle::internal::circle.process_cb))(q_handle);
+    if (parent->impl->queue.count > 0 && !ABORT_FLAG) {
+      (*(parent->process_cb))(parent);
       sptr->local_objects_processed++;
     }
     /* If I don't have work, or if I received signal to abort,
@@ -296,14 +174,14 @@ static void work_loop(circle::state_st *sptr, circle::WorkQueue *q_handle) {
       /* check whether we have terminated */
       int term_status;
       if (sptr->term_tree_enabled) {
-        term_status = circle::check_for_term_allreduce(sptr);
+        term_status = sptr->checkForTermAllReduce();
       } else {
-        term_status = circle::check_for_term(sptr);
+        term_status = sptr->checkForTerm();
       }
 
-      if (term_status == circle::TERMINATE) {
+      if (term_status == TERMINATE) {
         /* got the terminate signal, break the loop */
-        LOG(circle::LogLevel::Debug, "Received termination signal.");
+        LOG(LogLevel::Debug, "Received termination signal.");
         break;
       }
     }
@@ -383,33 +261,33 @@ static void work_loop(circle::state_st *sptr, circle::WorkQueue *q_handle) {
      * items */
     if (!sptr->work_requested && !sptr->reduce_outstanding &&
         !sptr->abort_outstanding && sptr->token_send_req == MPI_REQUEST_NULL) {
-      circle::barrier_start(sptr);
+      sptr->barrierStart();
     }
 
     /* break the loop when the non-blocking barrier completes */
-    if (circle::barrier_test(sptr)) {
+    if (sptr->barrierTest()) {
       break;
     }
 
     /* send no work message for any work request that comes in */
-    circle::workreq_check(circle::internal::circle.impl->queue, sptr, cleanup);
+    sptr->workreqCheck(&parent->impl->queue, cleanup);
 
     /* cleanup any outstanding reduction */
     if (sptr->reduce_enabled) {
-      circle::reduce_check(sptr, sptr->local_objects_processed, cleanup);
+      sptr->reduceCheck(sptr->local_objects_processed, cleanup);
     }
 
     /* receive any incoming work reply messages */
-    circle::request_work(circle::internal::circle.impl->queue, sptr, cleanup);
+    sptr->requestWork(&parent->impl->queue, cleanup);
 
     /* drain any outstanding abort messages */
-    circle::abort_check(sptr, cleanup);
+    sptr->abortCheck(cleanup);
 
     /* if we're using circle-based token passing, drain any
      * messages still outstanding */
     if (!sptr->term_tree_enabled) {
       /* check for and receive any incoming token */
-      circle::token_check(sptr);
+      sptr->tokenCheck();
 
       /* if we have an outstanding token, check whether it's been received */
       if (sptr->token_send_req != MPI_REQUEST_NULL) {
@@ -423,15 +301,17 @@ static void work_loop(circle::state_st *sptr, circle::WorkQueue *q_handle) {
   /* execute final, synchronous reduction if enabled, this ensures
    * that we fire at least one reduce and one with the final result */
   if (sptr->reduce_enabled) {
-    circle::reduce_sync(sptr, sptr->local_objects_processed);
+    sptr->reduceSync(sptr->local_objects_processed);
   }
 
   /* if any process is in the abort state,
    * set all to be in the abort state */
-  circle::abort_reduce(sptr);
+  sptr->abortReduce();
 
   return;
 }
+
+Worker::Worker(Circle* parent_) : parent(parent_) { }
 
 /**
  * @brief Sets up libcircle, calls work loop function
@@ -440,23 +320,22 @@ static void work_loop(circle::state_st *sptr, circle::WorkQueue *q_handle) {
  *     -# Initializes MPI
  *     -# Initializes internal libcircle data structures
  *     -# Calls libcircle's main work loop function.
- *     -# Checkpoints if circle::abort has been called by a rank.
+ *     -# Checkpoints if abort has been called by a rank.
  */
-int8_t circle::worker() {
+int Worker::execute() {
+  /* initialize all local state variables */
+  State state(parent);
+
   /* Holds all worker state */
-  circle::state_st local_state;
-  circle::state_st *sptr = &local_state;
+  State *sptr = &state;
 
   /* get MPI communicator */
-  MPI_Comm comm = circle::internal::circle.impl->comm;
+  MPI_Comm comm = parent->impl->comm;
 
   /* get our rank and the size of the communicator */
   int rank, size;
   MPI_Comm_rank(comm, &rank);
   MPI_Comm_size(comm, &size);
-
-  /* initialize all local state variables */
-  init_local_state(comm, sptr);
 
   /* setup an MPI error handler */
   MPI_Errhandler circle_err;
@@ -464,32 +343,32 @@ int8_t circle::worker() {
   MPI_Comm_set_errhandler(comm, circle_err);
 
   /* print settings of some runtime tunables */
-  if ((circle::internal::circle.runtimeFlags & circle::RuntimeFlags::SplitEqual) !=
-      circle::RuntimeFlags::None) {
-    LOG(circle::LogLevel::Debug, "Using equalized load splitting.");
+  if ((parent->runtimeFlags & RuntimeFlags::SplitEqual) !=
+      RuntimeFlags::None) {
+    LOG(LogLevel::Debug, "Using equalized load splitting.");
   }
 
-  if ((circle::internal::circle.runtimeFlags & circle::RuntimeFlags::SplitRandom) !=
-      circle::RuntimeFlags::None) {
-    LOG(circle::LogLevel::Debug, "Using randomized load splitting.");
+  if ((parent->runtimeFlags & RuntimeFlags::SplitRandom) !=
+      RuntimeFlags::None) {
+    LOG(LogLevel::Debug, "Using randomized load splitting.");
   }
 
-  if ((circle::internal::circle.runtimeFlags & circle::RuntimeFlags::CreateGlobal) !=
-      circle::RuntimeFlags::None) {
-    LOG(circle::LogLevel::Debug, "Create callback enabled on all ranks.");
+  if ((parent->runtimeFlags & RuntimeFlags::CreateGlobal) !=
+      RuntimeFlags::None) {
+    LOG(LogLevel::Debug, "Create callback enabled on all ranks.");
   } else {
-    LOG(circle::LogLevel::Debug, "Create callback enabled on rank 0 only.");
+    LOG(LogLevel::Debug, "Create callback enabled on rank 0 only.");
   }
 
-  if ((circle::internal::circle.runtimeFlags & circle::RuntimeFlags::TermTree) !=
-      circle::RuntimeFlags::None) {
-    LOG(circle::LogLevel::Debug, "Using tree termination detection.");
+  if ((parent->runtimeFlags & RuntimeFlags::TermTree) !=
+      RuntimeFlags::None) {
+    LOG(LogLevel::Debug, "Using tree termination detection.");
   } else {
-    LOG(circle::LogLevel::Debug, "Using circle termination detection.");
+    LOG(LogLevel::Debug, "Using circle termination detection.");
   }
 
-  LOG(circle::LogLevel::Debug, "Tree width: %d", circle::internal::circle.impl->tree_width);
-  LOG(circle::LogLevel::Debug, "Reduce period (secs): %d", circle::internal::circle.reduce_period);
+  LOG(LogLevel::Debug, "Tree width: %d", parent->impl->tree_width);
+  LOG(LogLevel::Debug, "Reduce period (secs): %d", parent->reduce_period);
 
   /**********************************
    * this is where the heavy lifting is done
@@ -497,18 +376,18 @@ int8_t circle::worker() {
 
   /* add initial work to queues by calling create_cb,
    * only invoke on master unless CREATE_GLOBAL is set */
-  if (rank == 0 || (circle::internal::circle.runtimeFlags & circle::RuntimeFlags::CreateGlobal) !=
-                       circle::RuntimeFlags::None) {
-    (*(circle::internal::circle.create_cb))(&queue_handle);
+  if (rank == 0 || (parent->runtimeFlags & RuntimeFlags::CreateGlobal) !=
+                       RuntimeFlags::None) {
+    (*(parent->create_cb))(parent);
   }
 
   /* work until we get a terminate message */
-  work_loop(sptr, &queue_handle);
+  mainLoop(sptr);
 
   /* we may have dropped out early from an abort signal,
    * in which case we should checkpoint here */
   if (ABORT_FLAG) {
-    circle::checkpoint();
+    checkpoint();
   }
 
   /**********************************
@@ -516,7 +395,7 @@ int8_t circle::worker() {
    **********************************/
 
   /* optionally print summary info */
-  if (circle::internal::circle.logLevel >= circle::LogLevel::Info) {
+  if (parent->logLevel >= LogLevel::Info) {
     /* allocate memory for summary data */
     size_t array_elems = (size_t)size;
     uint32_t *total_objects_processed_array =
@@ -542,34 +421,29 @@ int8_t circle::worker() {
     if (rank == 0) {
       int i;
       for (i = 0; i < size; i++) {
-        LOG(circle::LogLevel::Info, "Rank %d\tObjects Processed %d\t%0.3lf%%", i,
+        LOG(LogLevel::Info, "Rank %d\tObjects Processed %d\t%0.3lf%%", i,
             total_objects_processed_array[i],
             (double)total_objects_processed_array[i] /
                 (double)total_objects_processed * 100.0);
-        LOG(circle::LogLevel::Info, "Rank %d\tWork requests: %d", i,
+        LOG(LogLevel::Info, "Rank %d\tWork requests: %d", i,
             total_work_requests_array[i]);
-        LOG(circle::LogLevel::Info, "Rank %d\tNo work replies: %d", i,
+        LOG(LogLevel::Info, "Rank %d\tNo work replies: %d", i,
             total_no_work_received_array[i]);
       }
 
-      LOG(circle::LogLevel::Info, "Total Objects Processed: %d",
+      LOG(LogLevel::Info, "Total Objects Processed: %d",
           total_objects_processed);
     }
 
     /* free memory */
-    circle::free(&total_no_work_received_array);
-    circle::free(&total_work_requests_array);
-    circle::free(&total_objects_processed_array);
+    free(&total_no_work_received_array);
+    free(&total_work_requests_array);
+    free(&total_objects_processed_array);
   }
 
   /* restore original error handler and free our custom one */
   MPI_Comm_set_errhandler(comm, MPI_ERRORS_ARE_FATAL);
   MPI_Errhandler_free(&circle_err);
 
-  /* free memory */
-  finalize_local_state(sptr);
-
   return 0;
 }
-
-/* EOF */

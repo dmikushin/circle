@@ -12,6 +12,8 @@
 
 namespace circle {
 
+namespace internal {
+
 enum tags {
   WHITE,
   BLACK,
@@ -37,15 +39,33 @@ typedef struct options {
 } options;
 
 /* records info about the tree of spawn processes */
-typedef struct tree_state_st {
+class TreeState {
+
+public : // TODO remove
   int rank;         /* our global rank (0 to ranks-1) */
   int ranks;        /* number of nodes in tree */
   int parent_rank;  /* rank of parent */
   int children;     /* number of children we have */
   int *child_ranks; /* global ranks of our children */
-} tree_state_st;
 
-typedef struct state_st {
+  Circle* parent;
+
+public :
+
+  TreeState(Circle* parent_, int rank, int ranks, int k, MPI_Comm comm);
+
+  ~TreeState();
+
+  template<typename ... Args>
+  void log(LogLevel logLevel_, const char* filename, int lineno, Args&& ... args)
+  {
+    parent->log(logLevel_, filename, lineno, std::forward<Args>(args) ...);
+  }
+};
+
+class State {
+
+public : // TODO remove
   /* communicator and our rank and its size */
   MPI_Comm comm;
   int rank;
@@ -78,7 +98,7 @@ typedef struct state_st {
   int work_requested_rank; /* rank of process we requested work from */
 
   /* tree used for collective operations */
-  circle::tree_state_st tree; /* parent and children of tree */
+  TreeState* tree; /* parent and children of tree */
 
   /* manage state for reduction operations */
   int reduce_enabled;      /* flag indicating whether reductions are enabled */
@@ -117,66 +137,109 @@ typedef struct state_st {
       local_work_requested; /* number of times a process asked us for work */
   uint32_t
       local_no_work_received; /* number of times a process asked us for work */
-} state_st;
 
-/* given the rank of the calling process, the number of ranks in the job,
- * and a degree k, compute parent and children of tree rooted at rank 0
- * and store in tree structure */
-void tree_init(int32_t rank, int32_t ranks, int32_t k, MPI_Comm comm,
-               circle::tree_state_st *t);
+  Circle* parent;
 
-/* free resources allocated in circle::tree_init */
-void tree_free(circle::tree_state_st *t);
+public :
 
-/* initiate and execute reduction in background */
-void reduce_check(circle::state_st *st, int count, int cleanup);
+  State(Circle* parent);
 
-/* execute synchronous reduction */
-void reduce_sync(circle::state_st *st, int count);
+  ~State();
 
-/* start non-blocking barrier */
-void barrier_start(circle::state_st *st);
+  template<typename ... Args>
+  void log(LogLevel logLevel_, const char* filename, int lineno, Args&& ... args)
+  {
+    parent->log(logLevel_, filename, lineno, std::forward<Args>(args) ...);
+  }
 
-/* test for completion of non-blocking barrier,
- * returns 1 when all procs have called barrier_start (and resets),
- * returns 0 otherwise */
-int barrier_test(circle::state_st *st);
+  /* initiate and execute reduction in background */
+  void reduceCheck(int count, int cleanup);
 
-/* test for abort, forward abort messages on tree if needed,
- * draining incoming abort messages */
-void abort_check(circle::state_st *st, int cleanup);
+  /* execute synchronous reduction */
+  void reduceSync(int count);
 
-/* execute an allreduce to determine whether any rank has entered
- *  * the abort state, and if so, set all ranks to be in abort state */
-void abort_reduce(circle::state_st *st);
+  /* start non-blocking barrier */
+  void barrierStart();
 
-void get_next_proc(circle::state_st *st);
+  /* test for completion of non-blocking barrier,
+   * returns 1 when all procs have called barrier_start (and resets),
+   * returns 0 otherwise */
+  int barrierTest();
 
-/* checks for and receives an incoming token message,
- * then updates state */
-void token_check(circle::state_st *st);
+  /* test for abort, forward abort messages on tree if needed,
+   * draining incoming abort messages */
+  void abortCheck(int cleanup);
 
-int check_for_term(circle::state_st *st);
+  /* execute an allreduce to determine whether any rank has entered
+   * the abort state, and if so, set all ranks to be in abort state */
+  void abortReduce();
 
-int check_for_term_allreduce(circle::state_st *st);
+  void getNextProc();
 
-void workreceipt_check(circle::internal_queue_t *queue,
-                       circle::state_st *state);
+  int checkForTermAllReduce();
 
-void workreq_check(circle::internal_queue_t *queue, circle::state_st *state,
-                   int cleanup);
+  void workreceiptCheck(Queue *queue);
 
-int32_t request_work(circle::internal_queue_t *queue, circle::state_st *state,
-                     int cleanup);
+  void workreqCheck(Queue *queue, int cleanup);
 
-void send_no_work(int32_t dest);
+  int32_t requestWork(Queue *queue, int cleanup);
 
-int8_t extend_offsets(circle::state_st *st, int32_t size);
+  void sendNoWork(int32_t dest);
 
-void print_offsets(uint32_t *offsets, int32_t count);
+  int8_t extendOffsets(int32_t size);
 
-void bcast_abort(void);
+  void printOffsets(uint32_t *offsets, int32_t count);
+
+  void abortStart(int cleanup);
+
+  void bcast_abort();
+
+  /* send token using MPI_Issend and update state */
+  void tokenIsSend();
+
+  /* given that we've received a token message,
+   * receive it and update our state */
+  void tokenRecv();
+
+  /* checks for and receives an incoming token message,
+   * then updates state */
+  void tokenCheck();
+
+  /**
+   * Checks for incoming tokens, determines termination conditions.
+   *
+   * When the master rank is idle, it generates a token that is initially white.
+   * When a node is idle, and can't get work for one loop iteration, then it
+   * checks for termination. It checks to see if the token has been passed to it,
+   * additionally checking for the termination token. If a rank receives a black
+   * token then it forwards a black token. Otherwise it forwards its own color.
+   *
+   * All nodes start out in the white state. State is *not* the same thing as
+   * the token. If a node j sends work to a rank i (i < j) then its state turns
+   * black. It then turns the token black when it comes around, forwards it, and
+   * turns its state back to white.
+   *
+   * @param st the libcircle state struct.
+   */
+  int checkForTerm();
+
+  /* we execute this function when we have detected incoming work messages */
+  int32_t workReceive(Queue *qp, int source, int size);
+
+  /**
+   * Sends work to a requestor
+   */
+  int sendWork(Queue *qp, int dest, int32_t count);
+
+  /**
+   * Distributes a random amount of the local work queue to the n requestors.
+   */
+  void sendWorkToMany(Queue *qp, int *requestors, int rcount);
+};
+
+} // namespace internal
 
 } // namespace circle
 
 #endif /* TOKEN_H */
+

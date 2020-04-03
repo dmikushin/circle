@@ -17,7 +17,7 @@ static size_t sztotal_partial = 0;
  * its contents can be safely changed or go out of scope after the call
  * to circle::reduce returns.
  */
-static void reduce_init(void) {
+static void my_reduce_init(void) {
   /*
    * We give the starting memory address and size of a memory
    * block that we want libcircle to capture on this process when
@@ -45,7 +45,7 @@ static void reduce_init(void) {
  * input buffer.  For example, one could concatentate buffers so that
  * the reduction actually performs a gather operation.
  */
-static void reduce_op(const void *buf1, size_t size1, const void *buf2,
+static void my_reduce_op(const void *buf1, size_t size1, const void *buf2,
                       size_t size2) {
   /*
    * Here we are given the starting address and size of two input
@@ -69,7 +69,7 @@ static void reduce_op(const void *buf1, size_t size1, const void *buf2,
  * provides a buffer holding the final reduction result as in input
  * parameter. Typically, one might print the result in this callback.
  */
-static void reduce_fini(const void *buf, size_t size) {
+static void my_reduce_fini(const void *buf, size_t size) {
   /*
    * In this example, we get the reduced sum from the input buffer,
    * and we compute the average processing rate.  We then print
@@ -82,7 +82,7 @@ static void reduce_fini(const void *buf, size_t size) {
 }
 
 /* An example of a create callback defined by your program */
-static void my_create_some_work(circle::WorkQueue *handle) {
+static void my_create_some_work(circle::Circle *circle) {
   /*
    * This is where you should generate work that needs to be processed.
    * For example, if your goal is to size files on a cluster filesystem,
@@ -102,7 +102,7 @@ static void my_create_some_work(circle::WorkQueue *handle) {
 
       const string filename = i->path().string();
       vector<uint8_t> content(filename.begin(), filename.end());
-      handle->enqueue(content);
+      circle->enqueue(content);
     }
   }
 }
@@ -112,7 +112,7 @@ void store_in_database(size_t finished_work) {
 }
 
 /* An example of a process callback defined by your program. */
-static void my_process_some_work(circle::WorkQueue *handle) {
+static void my_process_some_work(circle::Circle *circle) {
   /*
    * This is where work should be processed. For example, this is where you
    * should size one of the files which was placed on the queue by your
@@ -120,7 +120,7 @@ static void my_process_some_work(circle::WorkQueue *handle) {
    * as little as possible.
    */
   vector<uint8_t> content;
-  handle->dequeue(content);
+  circle->dequeue(content);
   string my_data(content.begin(), content.end());
 
   size_t finished_work = fs::file_size(my_data);
@@ -132,17 +132,12 @@ int main(int argc, char *argv[]) {
   /*
    * Do partial computations with libcircle.
    */
-  int rank = circle::init(argc, argv, circle::RuntimeFlags::DefaultFlags);
-  //circle::enable_logging(circle::LogLevel::Info);
-  circle::cb_create(&my_create_some_work);
-  circle::cb_process(&my_process_some_work);
-
-  /*
-   * Reduce the final result.
-   */
-  circle::cb_reduce_init(&reduce_init);
-  circle::cb_reduce_op(&reduce_op);
-  circle::cb_reduce_fini(&reduce_fini);
+  circle::init(argc, argv);
+  circle::Circle example(
+    my_create_some_work, my_process_some_work,
+    my_reduce_init, my_reduce_op, my_reduce_fini,
+    circle::RuntimeFlags::DefaultFlags);
+  example.enableLogging(circle::LogLevel::Info);
 
   /*
    * Specify time period between consecutive reductions.
@@ -150,8 +145,9 @@ int main(int argc, char *argv[]) {
    */
   //circle::set_reduce_period(10);
 
-  circle::begin();
+  example.execute();
   circle::finalize();
 
   return 0;
 }
+

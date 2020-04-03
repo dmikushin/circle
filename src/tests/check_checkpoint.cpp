@@ -13,33 +13,33 @@ START_TEST(test_checkpoint_single_read_write) {
 
   circle::init(0, NULL, circle::RuntimeDefaultFlags);
 
-  circle::internal_queue_t *out_q;
-  out_q = circle::internal_queue_init();
-  circle::internal_queue_push(out_q, test_string);
+  ::circle::internal::Queue *out_q;
+  out_q = ::circle::internal::Queue::init();
+  ::circle::internal::Queue::push(out_q, test_string);
 
-  checkpoint_write_ret = circle::internal_queue_write(out_q, fakerank);
+  checkpoint_write_ret = ::circle::internal::Queue::write(out_q, fakerank);
   fail_unless(checkpoint_write_ret > 0,
               "The checkpoint write function did not return a positive value.");
 
-  circle::internal_queue_free(out_q);
+  ::circle::internal::Queue::free(out_q);
   circle::finalize();
 
   circle::init(0, NULL, circle::RuntimeDefaultFlags);
-  circle::internal_queue_t *in_q;
-  in_q = circle::internal_queue_init();
+  ::circle::internal::Queue *in_q;
+  in_q = ::circle::internal::Queue::init();
 
-  checkpoint_read_ret = circle::internal_queue_read(in_q, fakerank);
+  checkpoint_read_ret = ::circle::internal::Queue::read(in_q, fakerank);
   fail_unless(checkpoint_read_ret > 0,
               "The checkpoint read function did not return a positive value.");
 
-  circle::internal_queue_pop(in_q, result);
+  ::circle::internal::Queue::pop(in_q, result);
   fail_unless(in_q->count == 0,
               "Queue count was not correct after poping the last element.");
 
   fail_unless(strcmp(test_string, result) == 0,
               "Result poped from the queue does not match original.");
 
-  circle::internal_queue_free(in_q);
+  ::circle::internal::Queue::free(in_q);
   circle::finalize();
 }
 END_TEST
@@ -67,5 +67,3 @@ int main(void) {
 
   return (number_failed == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
 }
-
-/* EOF */

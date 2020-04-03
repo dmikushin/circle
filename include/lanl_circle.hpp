@@ -52,27 +52,12 @@ enum class LogLevel : unsigned {
   Debug = 5
 };
 
-/**
- * The interface to the work queue. This can be accessed from within the
- * process and create work callbacks.
- */
-class WorkQueue {
-
-public :
-
-  int enqueue(const std::vector<uint8_t> &element);
-  int enqueue(const std::string &element);
-
-  int dequeue(std::vector<uint8_t> &element);
-  int dequeue(std::string &element);
-
-  uint32_t localQueueSize();
-};
+class Circle;
 
 /**
  * The type for defining callbacks for create and process.
  */
-typedef void (*cb)(circle::WorkQueue *handle);
+typedef void (*cb)(circle::Circle *handle);
 
 /**
  * Callbacks for initializing, executing, and obtaining final result
@@ -89,7 +74,9 @@ class CircleImpl;
 
 } // namespace internal
 
-struct Circle {
+class Circle {
+
+public :
 
   // TODO std::function
   circle::cb create_cb;
@@ -106,9 +93,39 @@ struct Circle {
   circle::LogLevel logLevel;
   circle::RuntimeFlags runtimeFlags;
 
+  /** The debug stream for all logging messages. */
+  FILE *debugStream;
+
   internal::CircleImpl* impl;
 
 public :
+
+  /**
+   * Initialize a Circle instance for parallel processing.
+   */
+  Circle(circle::cb createCallback, circle::cb processCallback, circle::RuntimeFlags runtimeFlags);
+
+  /**
+   * Initialize a Circle instance for parallel processing and reduction.
+   */
+  Circle(circle::cb createCallback, circle::cb processCallback,
+         circle::cb_reduce_init_fn reduceInitCallback, circle::cb_reduce_op_fn reduceOperationCallback,
+	 circle::cb_reduce_fini_fn reduceFinalizeCallback,
+         circle::RuntimeFlags runtimeFlags);
+
+  ~Circle();
+
+  template<typename ... Args>
+  void log(LogLevel logLevel_, const char* filename, int lineno, Args&& ... args) 
+  {
+    if (logLevel_ > logLevel) return;
+
+    fprintf(debugStream, "%d:%d:%s:%d: ", (int)time(NULL),
+            getRank(), filename, lineno);
+    fprintf(debugStream, std::forward<Args>(args) ...);
+    fprintf(debugStream, "\n");                               
+    fflush(debugStream);                                      
+  }
 
   /**
    * Define the detail of logging that libcircle should output.
@@ -129,6 +146,36 @@ public :
    * Change the number of seconds between consecutive reductions.
    */
   void setReducePeriod(int secs);
+
+  /**
+   * Get an MPI rank corresponding to the current process.
+   */
+  int getRank() const;
+
+  void reduce(const void *buf, size_t size);
+
+  /**
+   * Once you've defined and told libcircle about your callbacks, use this to
+   * execute your program.
+   */
+  void execute();
+
+  /**
+   * Call this function to have all ranks dump a checkpoint file and exit.
+   */
+  void abort(void);
+
+  /**
+   * The interface to the work queue. This can be accessed from within the
+   * process and create work callbacks.
+   */
+  int enqueue(const std::vector<uint8_t> &element);
+  int enqueue(const std::string &element);
+
+  int dequeue(std::vector<uint8_t> &element);
+  int dequeue(std::string &element);
+
+  uint32_t localQueueSize();
 };
 
 /**
@@ -140,7 +187,7 @@ const char *backtrace(int skip);
  * Initialize internal state needed by libcircle. This should be called before
  * any other libcircle API call. This returns the MPI rank value.
  */
-int init(int argc, char *argv[], circle::RuntimeFlags options);
+int init(int argc, char *argv[]);
 
 /**
  * Processing and creating work is done through callbacks. Here's how we tell
@@ -180,27 +227,10 @@ void cb_reduce_fini(circle::cb_reduce_fini_fn);
 void reduce(const void *buf, size_t size);
 
 /**
- * Once you've defined and told libcircle about your callbacks, use this to
- * execute your program.
- */
-void begin(void);
-
-/**
- * Call this function to have all ranks dump a checkpoint file and exit.
- */
-void abort(void);
-
-/**
  * Call this function to checkpoint libcircle's distributed queue. Each rank
  * writes a file called circle<rank>.txt
  */
 int8_t checkpoint(void);
-
-/**
- * Function to return a pointer to the handle.  Useful for threaded
- * applications. You are responsible for maintaining mutual exclusion.
- */
-WorkQueue *get_handle(void);
 
 /**
  * Call this function to initialize libcircle queues from restart files
