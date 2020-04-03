@@ -41,7 +41,7 @@ inline constexpr RuntimeFlags operator|(RuntimeFlags x, RuntimeFlags y) {
 }
 
 /**
- * The various logging levels that libcircle will output.
+ * The various logging levels that Circle will output.
  */
 enum class LogLevel : unsigned {
   None = 0,
@@ -57,16 +57,18 @@ class Circle;
 /**
  * The type for defining callbacks for create and process.
  */
-typedef void (*cb)(circle::Circle *handle);
+typedef void (*cb)(circle::Circle *circle);
 
 /**
  * Callbacks for initializing, executing, and obtaining final result
  * of a reduction
  */
-typedef void (*cb_reduce_init_fn)(void);
-typedef void (*cb_reduce_op_fn)(const void *buf1, size_t size1,
+typedef void (*cb_reduce_init_fn)(circle::Circle *circle);
+typedef void (*cb_reduce_op_fn)(circle::Circle *circle,
+		                const void *buf1, size_t size1,
                                 const void *buf2, size_t size2);
-typedef void (*cb_reduce_fini_fn)(const void *buf, size_t size);
+typedef void (*cb_reduce_fini_fn)(circle::Circle *circle,
+		                  const void *buf, size_t size);
 
 namespace internal {
 
@@ -128,7 +130,7 @@ public :
   }
 
   /**
-   * Define the detail of logging that libcircle should output.
+   * Define the detail of logging that Circle should output.
    */
   void enableLogging(enum LogLevel level);
 
@@ -155,7 +157,7 @@ public :
   void reduce(const void *buf, size_t size);
 
   /**
-   * Once you've defined and told libcircle about your callbacks, use this to
+   * Once you've defined and told Circle about your callbacks, use this to
    * execute your program.
    */
   void execute();
@@ -184,31 +186,31 @@ public :
 const char *backtrace(int skip);
 
 /**
- * Initialize internal state needed by libcircle. This should be called before
- * any other libcircle API call. This returns the MPI rank value.
+ * Initialize internal state needed by Circle. This should be called before
+ * any other Circle API call. This returns the MPI rank value.
  */
 int init(int argc, char *argv[]);
 
 /**
  * Processing and creating work is done through callbacks. Here's how we tell
- * libcircle about our function which creates work. This call is optional.
+ * Circle about our function which creates work. This call is optional.
  */
 void cb_create(circle::cb func);
 
 /**
- * After you give libcircle a way to create work, you need to tell it how that
+ * After you give Circle a way to create work, you need to tell it how that
  * work should be processed.
  */
 void cb_process(circle::cb func);
 
 /**
- * Specify function that libcircle should call to get initial data for
+ * Specify function that Circle should call to get initial data for
  * a reduction.
  */
 void cb_reduce_init(circle::cb_reduce_init_fn);
 
 /**
- * Specify function that libcircle should call to execute a reduction
+ * Specify function that Circle should call to execute a reduction
  * operation.
  */
 void cb_reduce_op(circle::cb_reduce_op_fn);
@@ -220,27 +222,27 @@ void cb_reduce_op(circle::cb_reduce_op_fn);
 void cb_reduce_fini(circle::cb_reduce_fini_fn);
 
 /**
- * Provide libcircle with initial reduction data during initial
- * and intermediate reduction callbacks, libcircle makes a copy
+ * Provide Circle with initial reduction data during initial
+ * and intermediate reduction callbacks, Circle makes a copy
  * of the data so the user buffer can be immediately released.
  */
 void reduce(const void *buf, size_t size);
 
 /**
- * Call this function to checkpoint libcircle's distributed queue. Each rank
+ * Call this function to checkpoint Circle's distributed queue. Each rank
  * writes a file called circle<rank>.txt
  */
 int8_t checkpoint(void);
 
 /**
- * Call this function to initialize libcircle queues from restart files
+ * Call this function to initialize Circle queues from restart files
  * created by checkpoint.
  */
 int8_t read_restarts(void);
 
 /**
- * After your program has executed, give libcircle a chance to clean up after
- * itself by calling this. This should be called after all libcircle API calls.
+ * After your program has executed, give Circle a chance to clean up after
+ * itself by calling this. This should be called after all Circle API calls.
  */
 void finalize(void);
 

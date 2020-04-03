@@ -217,7 +217,7 @@ void State::reduceCheck(int count, int cleanup) {
           if (parent->reduce_op_cb != NULL) {
             void *currbuf = parent->reduce_buf;
             size_t currsize = parent->reduce_buf_size;
-            (*(parent->reduce_op_cb))(currbuf, currsize, inbuf, insize);
+            (*(parent->reduce_op_cb))(parent, currbuf, currsize, inbuf, insize);
           }
         }
 
@@ -257,7 +257,7 @@ void State::reduceCheck(int count, int cleanup) {
           if (parent->reduce_fini_cb != NULL) {
             void *resultbuf = parent->reduce_buf;
             size_t resultsize = parent->reduce_buf_size;
-            (*(parent->reduce_fini_cb))(resultbuf, resultsize);
+            (*(parent->reduce_fini_cb))(parent, resultbuf, resultsize);
           }
         }
       }
@@ -324,7 +324,7 @@ void State::reduceCheck(int count, int cleanup) {
        * it will be stored in circle after user
        * calls reduce which should be done in callback */
       if (parent->reduce_init_cb != NULL) {
-        (*(parent->reduce_init_cb))();
+        (*(parent->reduce_init_cb))(parent);
       }
 
       /* send message to each child */
@@ -360,7 +360,7 @@ void State::reduceSync(int count) {
    * it will be stored in circle after user
    * calls reduce which should be done in callback */
   if (parent->reduce_init_cb != NULL) {
-    (*(parent->reduce_init_cb))();
+    (*(parent->reduce_init_cb))(parent);
   }
 
   /* wait for messages from our children */
@@ -400,7 +400,7 @@ void State::reduceSync(int count) {
     if (parent->reduce_op_cb != NULL) {
       void *currbuf = parent->reduce_buf;
       size_t currsize = parent->reduce_buf_size;
-      (*(parent->reduce_op_cb))(currbuf, currsize, inbuf, insize);
+      (*(parent->reduce_op_cb))(parent, currbuf, currsize, inbuf, insize);
     }
 
     /* free temporary buffer holding incoming user data */
@@ -431,7 +431,7 @@ void State::reduceSync(int count) {
     if (parent->reduce_fini_cb != NULL) {
       void *resultbuf = parent->reduce_buf;
       size_t resultsize = parent->reduce_buf_size;
-      (*(parent->reduce_fini_cb))(resultbuf, resultsize);
+      (*(parent->reduce_fini_cb))(parent, resultbuf, resultsize);
     }
   }
 

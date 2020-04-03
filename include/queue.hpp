@@ -20,7 +20,7 @@ struct Queue {
   std::vector<char> base;        /* Base of the memory pool */
   uintptr_t head;                /* The location of the next free byte */
   std::vector<uintptr_t>strings; /* The string data */
-  int32_t count;                 /* The number of actively queued strings */
+  int count;                 /* The number of actively queued strings */
 
   Circle* parent;
 
@@ -34,8 +34,13 @@ public :
     parent->log(logLevel_, filename, lineno, std::forward<Args>(args) ...);
   }
 
+  int getCount() const;
+
   int8_t push(const std::vector<uint8_t> &content);
+  int8_t push(const std::string &content);
+
   int8_t pop(std::vector<uint8_t> &content);
+  int8_t pop(std::string &content);
 
   void dump();
   void print();

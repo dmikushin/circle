@@ -6,72 +6,52 @@
 #include "queue.hpp"
 
 START_TEST(test_queue_init_free) {
-  int free_result = -1;
+  circle::init(0, NULL);
 
-  ::circle::internal::Queue *q;
-  circle::init(0, NULL, circle::RuntimeFlags::DefaultFlags);
-
-  q = ::circle::internal::Queue::init();
-  fail_if(q == NULL, "Initializing a queue failed.");
-
-  free_result = ::circle::internal::Queue::free(q);
-  fail_unless(free_result >= 0, "Queue was not null after free.");
+  circle::internal::Queue q(NULL);
 
   circle::finalize();
 }
 END_TEST
 
 START_TEST(test_queue_pop_empty) {
-  int free_result = -1;
   std::string result;
 
-  ::circle::internal::Queue *q;
-  circle::init(0, NULL, circle::RuntimeFlags::DefaultFlags);
+  circle::init(0, NULL);
 
-  q = ::circle::internal::Queue::init();
-  fail_if(q == NULL, "Initializing a queue failed.");
+  circle::internal::Queue q(NULL);
 
-  ::circle::internal::Queue::pop(q, result);
+  q.pop(result);
   fail_if(result.size() > 0, "Something was poped from an empty queue.");
-
-  free_result = ::circle::internal::Queue::free(q);
-  fail_unless(free_result, "Circle context was not null after free.");
 
   circle::finalize();
 }
 END_TEST
 
 START_TEST(test_queue_single_push_pop) {
-  int free_result = -1;
   const std::string test_string = "Here's a test string!";
   std::string result;
 
-  ::circle::internal::Queue *q;
-  circle::init(0, NULL, circle::RuntimeFlags::DefaultFlags);
+  circle::init(0, NULL);
 
-  q = ::circle::internal::Queue::init();
-  fail_if(q == NULL, "Initializing a queue failed.");
+  circle::internal::Queue q(NULL);
 
-  ::circle::internal::Queue::push(q, test_string);
-  fail_unless(q->count == 1,
+  q.push(test_string);
+  fail_unless(q.getCount() == 1,
               "Queue count was not correct after a single push.");
 
-  ::circle::internal::Queue::pop(q, result);
-  fail_unless(q->count == 0,
+  q.pop(result);
+  fail_unless(q.getCount() == 0,
               "Queue count was not correct after poping the last element.");
 
   fail_unless(test_string == result,
               "Result poped from the queue does not match original.");
-
-  free_result = ::circle::internal::Queue::free(q);
-  fail_unless(free_result, "Circle context was not null after free.");
 
   circle::finalize();
 }
 END_TEST
 
 START_TEST(test_queue_multiple_push_pop) {
-  int free_result = -1;
   std::string result;
 
   const std::string test_strings[] = {
@@ -80,69 +60,64 @@ START_TEST(test_queue_multiple_push_pop) {
       "seventh test string", "eighth test string", "nineth test string",
       "tenth test string"};
 
-  ::circle::internal::Queue *q;
-  circle::init(0, NULL, circle::RuntimeFlags::DefaultFlags);
+  circle::init(0, NULL);
 
-  q = ::circle::internal::Queue::init();
-  fail_unless(q != NULL, "Initializing a queue failed.");
+  circle::internal::Queue q(NULL);
 
   /* Warm it up a bit */
-  ::circle::internal::Queue::push(q, test_strings[0]);
-  ::circle::internal::Queue::pop(q, result);
-  ::circle::internal::Queue::push(q, test_strings[1]);
-  ::circle::internal::Queue::pop(q, result);
+  q.push(test_strings[0]);
+  q.pop(result);
+  q.push(test_strings[1]);
+  q.pop(result);
 
   fail_unless(test_strings[1] == result,
               "The queue pop was not the expected result.");
 
-  fail_unless(q->count == 0,
+  fail_unless(q.getCount() == 0,
               "Queue count was not correct after two pushes and two pops.");
 
   /* Now lets try multiple ones */
-  ::circle::internal::Queue::push(q, test_strings[2]);
-  ::circle::internal::Queue::push(q, test_strings[3]);
-  ::circle::internal::Queue::push(q, test_strings[4]);
-  ::circle::internal::Queue::push(q, test_strings[5]);
-  ::circle::internal::Queue::push(q, test_strings[6]);
-  ::circle::internal::Queue::push(q, test_strings[7]); // count = 6
-  ::circle::internal::Queue::pop(q, result);
-  ::circle::internal::Queue::pop(q, result);
-  ::circle::internal::Queue::pop(q, result);
-  ::circle::internal::Queue::pop(q, result); // count = 2
-  ::circle::internal::Queue::push(q, test_strings[8]);
-  ::circle::internal::Queue::push(q, test_strings[9]);
-  ::circle::internal::Queue::push(q, test_strings[0]); // count = 5
-  ::circle::internal::Queue::pop(q, result);
-  ::circle::internal::Queue::pop(q, result);
-  ::circle::internal::Queue::pop(q, result);
-  ::circle::internal::Queue::pop(q, result);
-  ::circle::internal::Queue::pop(q, result); // count = 0
+  q.push(test_strings[2]);
+  q.push(test_strings[3]);
+  q.push(test_strings[4]);
+  q.push(test_strings[5]);
+  q.push(test_strings[6]);
+  q.push(test_strings[7]); // count = 6
+  q.pop(result);
+  q.pop(result);
+  q.pop(result);
+  q.pop(result); // count = 2
+  q.push(test_strings[8]);
+  q.push(test_strings[9]);
+  q.push(test_strings[0]); // count = 5
+  q.pop(result);
+  q.pop(result);
+  q.pop(result);
+  q.pop(result);
+  q.pop(result); // count = 0
 
   fail_unless(test_strings[2] == result,
               "The queue pop was not the expected result.");
 
-  fail_unless(q->count == 0,
+  fail_unless(q.getCount() == 0,
               "Queue count was not correct after several operations.");
 
   /* Lets just try a few randomly */
-  ::circle::internal::Queue::push(q, test_strings[1]);
-  ::circle::internal::Queue::pop(q, result);
-  ::circle::internal::Queue::pop(q, result); // count = 0
-  ::circle::internal::Queue::push(q, test_strings[2]);
-  ::circle::internal::Queue::pop(q, result);
-  ::circle::internal::Queue::push(q, test_strings[3]);
-  ::circle::internal::Queue::push(q, test_strings[4]);
-  ::circle::internal::Queue::push(q, test_strings[5]); // count = 3
-  ::circle::internal::Queue::pop(q, result);           // count = 2
+  q.push(test_strings[1]);
+  q.pop(result);
+  q.pop(result); // count = 0
+  q.push(test_strings[2]);
+  q.pop(result);
+  q.push(test_strings[3]);
+  q.push(test_strings[4]);
+  q.push(test_strings[5]); // count = 3
+  q.pop(result);           // count = 2
 
-  fail_unless(test_strings == result,
+  fail_unless(test_strings[5] == result,
               "The queue pop was not the expected result.");
 
-  fail_unless(q->count == 2,
+  fail_unless(q.getCount() == 2,
               "Queue count was not correct after several operations.");
-
-  free_result = ::circle::internal::Queue::free(q);
-  fail_unless(free_result, "Circle context was not null after free.");
 
   circle::finalize();
 }
@@ -174,3 +149,4 @@ int main(void) {
 
   return (number_failed == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
 }
+

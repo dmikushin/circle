@@ -38,6 +38,10 @@ Queue::Queue(Circle* parent_) : parent(parent_) {
   strings.resize(CIRCLE_INITIAL_INTERNAL_QUEUE_SIZE);
 }
 
+int Queue::getCount() const {
+  return count;
+}
+
 /**
  * Dump the raw contents of the queue structure to logging.
  *
@@ -175,6 +179,12 @@ int8_t Queue::push(const std::vector<uint8_t> &content) {
   return 0;
 }
 
+int8_t Queue::push(const std::string &element)
+{ 
+  std::vector<uint8_t> content(element.begin(), element.end());
+  return push(content);
+}
+
 /**
  * Removes an item from the queue and returns a copy.
  *
@@ -198,6 +208,14 @@ int8_t Queue::pop(std::vector<uint8_t> &content) {
   count--;
 
   return 0;
+}
+
+int8_t Queue::pop(std::string &element)
+{
+  std::vector<uint8_t> content;
+  int result = pop(content);
+  std::copy(content.begin(), content.end(), element.begin());
+  return result;
 }
 
 /**
