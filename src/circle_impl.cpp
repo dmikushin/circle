@@ -93,6 +93,7 @@ int Circle::dequeue(std::string &element)
 {
   std::vector<uint8_t> content;
   int result = dequeue(content);
+  element.resize(content.size());
   std::copy(content.begin(), content.end(), element.begin());
   return result;
 }

@@ -31,7 +31,8 @@ public :
   template<typename ... Args>
   void log(LogLevel logLevel_, const char* filename, int lineno, Args&& ... args)
   {
-    parent->log(logLevel_, filename, lineno, std::forward<Args>(args) ...);
+    if (parent)
+      parent->log(logLevel_, filename, lineno, std::forward<Args>(args) ...);
   }
 
   int getCount() const;

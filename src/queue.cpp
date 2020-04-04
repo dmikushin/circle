@@ -214,6 +214,7 @@ int8_t Queue::pop(std::string &element)
 {
   std::vector<uint8_t> content;
   int result = pop(content);
+  element.resize(content.size());
   std::copy(content.begin(), content.end(), element.begin());
   return result;
 }
