@@ -115,7 +115,7 @@ uint32_t Queue::localQueueSize(void) {
  * Call this function to read in libcircle restart files.
  */
 int8_t Worker::readRestarts() {
-  return parent->impl->queue.read(parent->getRank());
+  return parent->impl->queue->read(parent->getRank());
 }
 
 /**
@@ -123,7 +123,7 @@ int8_t Worker::readRestarts() {
  * writes a file called circle<rank>.txt
  */
 int8_t Worker::checkpoint() {
-  return parent->impl->queue.write(parent->getRank());
+  return parent->impl->queue->write(parent->getRank());
 }
 
 /**
@@ -144,10 +144,10 @@ void Worker::mainLoop(State *sptr) {
   /* Loop until done, we break on normal termination or abort */
   while (1) {
     /* Check for and service work requests */
-    sptr->workreqCheck(&parent->impl->queue, cleanup);
+    sptr->workreqCheck(parent->impl->queue, cleanup);
 
     /* process any incoming work receipt messages */
-    sptr->workreceiptCheck(&parent->impl->queue);
+    sptr->workreceiptCheck(parent->impl->queue);
 
     /* check for incoming abort messages */
     sptr->abortCheck(cleanup);
@@ -158,13 +158,13 @@ void Worker::mainLoop(State *sptr) {
     }
 
     /* If I have no work, request work from another rank */
-    if (parent->impl->queue.count == 0) {
-      sptr->requestWork(&parent->impl->queue, cleanup);
+    if (parent->impl->queue->count == 0) {
+      sptr->requestWork(parent->impl->queue, cleanup);
     }
 
     /* If I have some work and have not received a signal to
      * abort, process one work item */
-    if (parent->impl->queue.count > 0 && !ABORT_FLAG) {
+    if (parent->impl->queue->count > 0 && !ABORT_FLAG) {
       (*(parent->process_cb))(parent);
       sptr->local_objects_processed++;
     }
@@ -270,7 +270,7 @@ void Worker::mainLoop(State *sptr) {
     }
 
     /* send no work message for any work request that comes in */
-    sptr->workreqCheck(&parent->impl->queue, cleanup);
+    sptr->workreqCheck(parent->impl->queue, cleanup);
 
     /* cleanup any outstanding reduction */
     if (sptr->reduce_enabled) {
@@ -278,7 +278,7 @@ void Worker::mainLoop(State *sptr) {
     }
 
     /* receive any incoming work reply messages */
-    sptr->requestWork(&parent->impl->queue, cleanup);
+    sptr->requestWork(parent->impl->queue, cleanup);
 
     /* drain any outstanding abort messages */
     sptr->abortCheck(cleanup);
@@ -343,24 +343,24 @@ int Worker::execute() {
   MPI_Comm_set_errhandler(comm, circle_err);
 
   /* print settings of some runtime tunables */
-  if ((parent->runtimeFlags & RuntimeFlags::SplitEqual) !=
+  if ((parent->impl->runtimeFlags & RuntimeFlags::SplitEqual) !=
       RuntimeFlags::None) {
     LOG(LogLevel::Debug, "Using equalized load splitting.");
   }
 
-  if ((parent->runtimeFlags & RuntimeFlags::SplitRandom) !=
+  if ((parent->impl->runtimeFlags & RuntimeFlags::SplitRandom) !=
       RuntimeFlags::None) {
     LOG(LogLevel::Debug, "Using randomized load splitting.");
   }
 
-  if ((parent->runtimeFlags & RuntimeFlags::CreateGlobal) !=
+  if ((parent->impl->runtimeFlags & RuntimeFlags::CreateGlobal) !=
       RuntimeFlags::None) {
     LOG(LogLevel::Debug, "Create callback enabled on all ranks.");
   } else {
     LOG(LogLevel::Debug, "Create callback enabled on rank 0 only.");
   }
 
-  if ((parent->runtimeFlags & RuntimeFlags::TermTree) !=
+  if ((parent->impl->runtimeFlags & RuntimeFlags::TermTree) !=
       RuntimeFlags::None) {
     LOG(LogLevel::Debug, "Using tree termination detection.");
   } else {
@@ -368,7 +368,7 @@ int Worker::execute() {
   }
 
   LOG(LogLevel::Debug, "Tree width: %d", parent->impl->tree_width);
-  LOG(LogLevel::Debug, "Reduce period (secs): %d", parent->reduce_period);
+  LOG(LogLevel::Debug, "Reduce period (secs): %d", parent->impl->reduce_period);
 
   /**********************************
    * this is where the heavy lifting is done
@@ -376,7 +376,7 @@ int Worker::execute() {
 
   /* add initial work to queues by calling create_cb,
    * only invoke on master unless CREATE_GLOBAL is set */
-  if (rank == 0 || (parent->runtimeFlags & RuntimeFlags::CreateGlobal) !=
+  if (rank == 0 || (parent->impl->runtimeFlags & RuntimeFlags::CreateGlobal) !=
                        RuntimeFlags::None) {
     (*(parent->create_cb))(parent);
   }
@@ -395,7 +395,7 @@ int Worker::execute() {
    **********************************/
 
   /* optionally print summary info */
-  if (parent->logLevel >= LogLevel::Info) {
+  if (parent->impl->logLevel >= LogLevel::Info) {
     /* allocate memory for summary data */
     size_t array_elems = (size_t)size;
     uint32_t *total_objects_processed_array =

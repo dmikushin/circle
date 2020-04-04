@@ -18,16 +18,26 @@ public : // TODO remove
 
   MPI_Comm comm;
 
+  // TODO Move to impl.
+  void *reduce_buf;
+  size_t reduce_buf_size;
+  int reduce_period;
+  LogLevel logLevel;
+  RuntimeFlags runtimeFlags;
+
+  /** The debug stream for all logging messages. */
+  FILE *debugStream;
+
   /* width of internal communication k-ary tree */
   int tree_width;
 
   int rank;
  
-  Queue queue;
+  Queue* queue;
 
 public :
 
-  CircleImpl(Circle* parent);
+  CircleImpl(Circle* parent, RuntimeFlags runtimeFlags);
 
   ~CircleImpl();
 

@@ -46,7 +46,7 @@ State::State(Circle* parent_) : parent(parent_), comm(parent_->impl->comm) {
   token_send_req = MPI_REQUEST_NULL;
 
   /* allocate memory for our offset arrays */
-  int32_t offsets = parent->impl->queue.strings.size();
+  int32_t offsets = parent->impl->queue->strings.size();
   offsets_count = offsets;
   offsets_send_buf = (int *)calloc((size_t)offsets, sizeof(int));
   offsets_recv_buf = (int *)calloc((size_t)offsets, sizeof(int));
@@ -65,7 +65,7 @@ State::State(Circle* parent_) : parent(parent_), comm(parent_->impl->comm) {
   /* determine whether we are using tree-based or circle-based
    * termination detection */
   term_tree_enabled = 0;
-  if ((parent->runtimeFlags & circle::RuntimeFlags::TermTree) !=
+  if ((parent->impl->runtimeFlags & circle::RuntimeFlags::TermTree) !=
       circle::RuntimeFlags::None) {
     term_tree_enabled = 1;
   }
@@ -76,7 +76,7 @@ State::State(Circle* parent_) : parent(parent_), comm(parent_->impl->comm) {
 
   /* init state for progress reduction operations */
   reduce_enabled = 0;
-  double secs = (double)parent->reduce_period;
+  double secs = (double)parent->impl->reduce_period;
   if (secs > 0.0) {
     reduce_enabled = 1;
   }
@@ -206,8 +206,8 @@ void State::reduceCheck(int count, int cleanup) {
          * reduce user data */
         if (reduce_buf[0] == MSG_VALID) {
           if (parent->reduce_op_cb != NULL) {
-            void *currbuf = parent->reduce_buf;
-            size_t currsize = parent->reduce_buf_size;
+            void *currbuf = parent->impl->reduce_buf;
+            size_t currsize = parent->impl->reduce_buf_size;
             (*(parent->reduce_op_cb))(parent, currbuf, currsize, inbuf, insize);
           }
         }
@@ -225,7 +225,7 @@ void State::reduceCheck(int count, int cleanup) {
       /* send message to parent if we have one */
       if (parent_rank != MPI_PROC_NULL) {
         /* get size of user data */
-        int bytes = (int)parent->reduce_buf_size;
+        int bytes = (int)parent->impl->reduce_buf_size;
         reduce_buf[2] = (long long int)bytes;
 
         /* send partial result to parent */
@@ -234,7 +234,7 @@ void State::reduceCheck(int count, int cleanup) {
 
         /* also send along user data if any, and if it is valid */
         if (bytes > 0 && reduce_buf[0] == MSG_VALID) {
-          void *currbuf = parent->reduce_buf;
+          void *currbuf = parent->impl->reduce_buf;
           MPI_Send(currbuf, bytes, MPI_BYTE, parent_rank,
                    CIRCLE_TAG_REDUCE, comm);
         }
@@ -246,8 +246,8 @@ void State::reduceCheck(int count, int cleanup) {
 
           /* invoke callback on root to deliver final result */
           if (parent->reduce_fini_cb != NULL) {
-            void *resultbuf = parent->reduce_buf;
-            size_t resultsize = parent->reduce_buf_size;
+            void *resultbuf = parent->impl->reduce_buf;
+            size_t resultsize = parent->impl->reduce_buf_size;
             (*(parent->reduce_fini_cb))(parent, resultbuf, resultsize);
           }
         }
@@ -386,8 +386,8 @@ void State::reduceSync(int count) {
 
     /* invoke user's callback to reduce user data */
     if (parent->reduce_op_cb != NULL) {
-      void *currbuf = parent->reduce_buf;
-      size_t currsize = parent->reduce_buf_size;
+      void *currbuf = parent->impl->reduce_buf;
+      size_t currsize = parent->impl->reduce_buf_size;
       (*(parent->reduce_op_cb))(parent, currbuf, currsize, inbuf, insize);
     }
 
@@ -398,7 +398,7 @@ void State::reduceSync(int count) {
   /* send message to parent if we have one */
   if (parent_rank != MPI_PROC_NULL) {
     /* get size of user data */
-    int bytes = (int)parent->reduce_buf_size;
+    int bytes = (int)parent->impl->reduce_buf_size;
     reduce_buf[2] = (long long int)bytes;
 
     /* send partial result to parent */
@@ -407,7 +407,7 @@ void State::reduceSync(int count) {
 
     /* also send along user data if any */
     if (bytes > 0) {
-      void *currbuf = parent->reduce_buf;
+      void *currbuf = parent->impl->reduce_buf;
       MPI_Send(currbuf, bytes, MPI_BYTE, parent_rank, CIRCLE_TAG_REDUCE,
                comm);
     }
@@ -417,8 +417,8 @@ void State::reduceSync(int count) {
 
     /* invoke callback on root to deliver final result */
     if (parent->reduce_fini_cb != NULL) {
-      void *resultbuf = parent->reduce_buf;
-      size_t resultsize = parent->reduce_buf_size;
+      void *resultbuf = parent->impl->reduce_buf;
+      size_t resultsize = parent->impl->reduce_buf_size;
       (*(parent->reduce_fini_cb))(parent, resultbuf, resultsize);
     }
   }
@@ -1178,7 +1178,7 @@ int32_t State::workReceive(Queue *qp, int source, int size) {
   size_t new_bytes = (size_t)(qp->head + (uintptr_t)chars) * sizeof(char);
 
   if (new_bytes > qp->base.size()) {
-    if (parent->impl->queue.extend(new_bytes) < 0) {
+    if (parent->impl->queue->extend(new_bytes) < 0) {
       LOG(LogLevel::Error, "Error: Unable to realloc string pool.");
       MPI_Abort(comm, CIRCLE_MPI_ERROR);
       return -1;
@@ -1193,7 +1193,7 @@ int32_t State::workReceive(Queue *qp, int source, int size) {
   int32_t count = items;
 
   if (count > qp->strings.size()) {
-    if (parent->impl->queue.extendStr(count) < 0) {
+    if (parent->impl->queue->extendStr(count) < 0) {
       LOG(LogLevel::Error, "Error: Unable to realloc string array.");
       MPI_Abort(comm, CIRCLE_MPI_ERROR);
       return -1;
@@ -1436,7 +1436,7 @@ void State::sendWorkToMany(Queue *qp, int *requestors, int rcount) {
     MPI_Abort(comm, CIRCLE_MPI_ERROR);
   }
 
-  if ((parent->runtimeFlags & RuntimeFlags::SplitEqual) !=
+  if ((parent->impl->runtimeFlags & RuntimeFlags::SplitEqual) !=
       RuntimeFlags::None) {
     /* split queue equally among ourself and all requestors */
     spread_counts(&sizes[0], num_ranks, qp->count);
@@ -1556,7 +1556,7 @@ void State::workreqCheck(Queue *qp, int cleanup) {
 }
 
 /**
- * Print the offsets of a copied queue.
+ * Print the offsets of a copied queue->
  */
 void State::printOffsets(uint32_t *offsets, int32_t count) {
   int32_t i = 0;

@@ -14,19 +14,10 @@ static char WORK_COMM_NAME[32] = "Libcircle Work Comm";
  */
 Circle::Circle(cb createCallback_, cb processCallback_,
   RuntimeFlags runtimeFlags_) :
-  debugStream(stdout),
   create_cb(createCallback_), process_cb(processCallback_),
-  reduce_init_cb(nullptr), reduce_op_cb(nullptr), reduce_fini_cb(nullptr),
-  reduce_buf(nullptr) {
-  logLevel = LogLevel::Fatal;
+  reduce_init_cb(nullptr), reduce_op_cb(nullptr), reduce_fini_cb(nullptr) {
 
-  /* initialize reduction period to 0 seconds
-   * to disable reductions by default */
-  reduce_period = 0;
-
-  runtimeFlags = runtimeFlags_;
-
-  impl = new CircleImpl(this);
+  impl = new CircleImpl(this, runtimeFlags_);
 }
 
 /**
@@ -36,25 +27,14 @@ Circle::Circle(circle::cb createCallback_, circle::cb processCallback_,
   circle::cb_reduce_init_fn reduceInitCallback_, circle::cb_reduce_op_fn reduceOperationCallback_,
   circle::cb_reduce_fini_fn reduceFinalizeCallback_,
   circle::RuntimeFlags runtimeFlags_) :
-  debugStream(stdout),
   create_cb(createCallback_), process_cb(processCallback_),
   reduce_init_cb(reduceInitCallback_), reduce_op_cb(reduceOperationCallback_),
-  reduce_fini_cb(reduceFinalizeCallback_), reduce_buf(nullptr) {
-  logLevel = LogLevel::Fatal;
+  reduce_fini_cb(reduceFinalizeCallback_) {
 
-  /* initialize reduction period to 0 seconds
-   * to disable reductions by default */
-  reduce_period = 0;
-
-  runtimeFlags = runtimeFlags_;
-
-  impl = new CircleImpl(this);
+  impl = new CircleImpl(this, runtimeFlags_);
 }
 
 Circle::~Circle() {
-  /* free buffer holding user reduction data */
-  free(&reduce_buf);
-
   delete impl;
 }
 
@@ -64,8 +44,8 @@ int Circle::getRank() const { return impl->rank; }
  * Change run time flags
  */
 void Circle::setRuntimeFlags(RuntimeFlags runtimeFlags_) {
-  runtimeFlags = runtimeFlags_;
-  LOG(LogLevel::Debug, "Circle options set: %X", runtimeFlags);
+  impl->runtimeFlags = runtimeFlags_;
+  LOG(LogLevel::Debug, "Circle options set: %X", impl->runtimeFlags);
 }
 
 /**
@@ -73,7 +53,7 @@ void Circle::setRuntimeFlags(RuntimeFlags runtimeFlags_) {
  *
  */
 int Circle::enqueue(const std::vector<uint8_t> &element) {
-  return impl->queue.push(element);
+  return impl->queue->push(element);
 }
 
 int Circle::enqueue(const std::string &element)
@@ -87,7 +67,7 @@ int Circle::enqueue(const std::string &element)
  */
 int Circle::dequeue(std::vector<uint8_t> &element)
 {
-  return impl->queue.pop(element);
+  return impl->queue->pop(element);
 }
 
 int Circle::dequeue(std::string &element)
@@ -103,7 +83,7 @@ int Circle::dequeue(std::string &element)
  * Wrapper for getting the local queue size
  */
 uint32_t Circle::localQueueSize() {
-  return (uint32_t)impl->queue.count;
+  return (uint32_t)impl->queue->count;
 }
 
 /**
@@ -114,7 +94,7 @@ void Circle::setTreeWidth(int width) { impl->tree_width = width; }
 /**
  * Change the number of seconds between consecutive reductions.
  */
-void Circle::setReducePeriod(int secs) { reduce_period = secs; }
+void Circle::setReducePeriod(int secs) { impl->reduce_period = secs; }
 
 /**
  * Call this function to give libcircle initial reduction data.
@@ -124,7 +104,7 @@ void Circle::setReducePeriod(int secs) { reduce_period = secs; }
  */
 void Circle::reduce(const void *buf, size_t size) {
   /* free existing buffer memory if we have any */
-  free(&reduce_buf);
+  free(&impl->reduce_buf);
 
   /* allocate memory to copy reduction data */
   if (size > 0) {
@@ -143,12 +123,20 @@ void Circle::reduce(const void *buf, size_t size) {
     memcpy(copy, buf, size);
 
     /* store buffer on input state */
-    reduce_buf = copy;
-    reduce_buf_size = size;
+    impl->reduce_buf = copy;
+    impl->reduce_buf_size = size;
   }
 }
 
-CircleImpl::CircleImpl(Circle* parent_) : rank(-1), parent(parent_), queue(parent) {
+CircleImpl::CircleImpl(Circle* parent_, RuntimeFlags runtimeFlags_) :
+  /* initialize reduction period to 0 seconds
+   * to disable reductions by default */
+  reduce_period(0), runtimeFlags(runtimeFlags_),
+  debugStream(stdout), reduce_buf(nullptr),
+  logLevel(LogLevel::Fatal),
+  rank(-1), parent(parent_) {
+  queue = new Queue(parent);
+
   /* initialize width of communication tree */
   tree_width = 64;
 
@@ -159,6 +147,11 @@ CircleImpl::CircleImpl(Circle* parent_) : rank(-1), parent(parent_), queue(paren
 
 CircleImpl::~CircleImpl()
 {
+  delete queue;
+
+  /* free buffer holding user reduction data */
+  free(&reduce_buf);
+
   /* free off MPI resources and shut it down */
   MPI_Comm_free(&comm);
 }

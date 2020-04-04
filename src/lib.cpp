@@ -101,8 +101,16 @@ void Circle::execute() {
 void Circle::abort(void) {
 #if 0
   // TODO
-  impl->queue.state->bcast_abort();
+  impl->queue->state->bcast_abort();
 #endif
+}
+
+enum LogLevel Circle::getLogLevel() const {
+  return impl->logLevel;
+}
+
+FILE* Circle::getLogStream() const {
+  return impl->debugStream;
 }
 
 /**
@@ -110,8 +118,8 @@ void Circle::abort(void) {
  *
  * @param level the logging level that libcircle should output.
  */
-void Circle::enableLogging(enum LogLevel logLevel_) {
-  logLevel = logLevel_;
+void Circle::setLogLevel(enum LogLevel logLevel_) {
+  impl->logLevel = logLevel_;
 }
 
 /**

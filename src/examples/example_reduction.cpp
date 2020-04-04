@@ -137,7 +137,7 @@ int main(int argc, char *argv[]) {
     my_create_some_work, my_process_some_work,
     my_reduce_init, my_reduce_op, my_reduce_fini,
     circle::RuntimeFlags::DefaultFlags);
-  example.enableLogging(circle::LogLevel::Info);
+  example.setLogLevel(circle::LogLevel::Info);
 
   /*
    * Specify time period between consecutive reductions.

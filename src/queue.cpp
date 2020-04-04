@@ -27,7 +27,6 @@ using namespace circle::internal;
  * @see Queue::free
  */
 Queue::Queue(Circle* parent_) : parent(parent_) {
-  LOG(LogLevel::Debug, "Allocating a queue structure.");
 
   /* Base address of string pool */
   base.resize(CIRCLE_MAX_STRING_LEN * CIRCLE_INITIAL_INTERNAL_QUEUE_SIZE);
@@ -123,7 +122,7 @@ int8_t Queue::extend(size_t amount) {
  * Push the specified content onto the queue structure.
  *
  * @param qp the queue structure to push the value onto.
- * @param str the string value to push onto the queue.
+ * @param str the string value to push onto the queue->
  *
  * @return a positive number on success, a negative one on failure.
  */
@@ -133,7 +132,7 @@ int8_t Queue::push(const std::vector<uint8_t> &content) {
   uint32_t len = (uint32_t)real_len;
 
   if (len <= 0) {
-    LOG(LogLevel::Error, "Attempted to push an empty string onto a queue.");
+    LOG(LogLevel::Error, "Attempted to push an empty string onto a queue->");
     return -1;
   }
 
@@ -195,7 +194,7 @@ int8_t Queue::push(const std::string &element)
  */
 int8_t Queue::pop(std::vector<uint8_t> &content) {
   if (count < 1) {
-    LOG(LogLevel::Debug, "Attempted to pop from an empty queue.");
+    LOG(LogLevel::Debug, "Attempted to pop from an empty queue->");
     return -1;
   }
 
@@ -232,7 +231,7 @@ int8_t Queue::read(int rank) {
 
   if (count != 0) {
     LOG(LogLevel::Warning,
-        "Reading items from checkpoint file into non-empty work queue.");
+        "Reading items from checkpoint file into non-empty work queue->");
   }
 
   char filename[256];
@@ -257,7 +256,7 @@ int8_t Queue::read(int rank) {
       LOG(LogLevel::Error, "Failed to push element on queue \"%s\"", str);
     }
 
-    LOG(LogLevel::Debug, "Pushed %s onto queue.", str);
+    LOG(LogLevel::Debug, "Pushed %s onto queue->", str);
   }
 
   checkpoint_file.close();
@@ -291,7 +290,7 @@ int8_t Queue::write(int rank) {
   while (count > 0) {
     std::vector<uint8_t> content;
     if (pop(content) < 0) {
-      LOG(LogLevel::Error, "Failed to pop item off queue.");
+      LOG(LogLevel::Error, "Failed to pop item off queue->");
       return -1;
     }
 

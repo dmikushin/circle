@@ -78,7 +78,7 @@ int main(int argc, char *argv[]) {
 
   circle::Circle example(my_create_some_work, my_process_some_work,
     circle::RuntimeFlags::DefaultFlags);
-  example.enableLogging(circle::LogLevel::Info);
+  example.setLogLevel(circle::LogLevel::Info);
 
   /*
    * Now that everything is setup, lets execute everything.

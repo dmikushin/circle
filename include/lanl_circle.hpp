@@ -88,16 +88,6 @@ public :
   circle::cb_reduce_op_fn reduce_op_cb;
   circle::cb_reduce_fini_fn reduce_fini_cb;
 
-  // TODO Move to impl.
-  void *reduce_buf;
-  size_t reduce_buf_size;
-  int reduce_period;
-  circle::LogLevel logLevel;
-  circle::RuntimeFlags runtimeFlags;
-
-  /** The debug stream for all logging messages. */
-  FILE *debugStream;
-
   internal::CircleImpl* impl;
 
 public :
@@ -120,7 +110,7 @@ public :
   template<typename ... Args>
   void log(LogLevel logLevel_, const char* filename, int lineno, Args&& ... args) 
   {
-    if (logLevel_ > logLevel) return;
+    if (logLevel_ > getLogLevel()) return;
 
     const char* level = "NONE";
     if (logLevel_ == LogLevel::Fatal)
@@ -134,20 +124,24 @@ public :
     else if (logLevel_ == LogLevel::Debug)
       level = "DEBG";
 
-    fprintf(debugStream, "[%s] %d:%d:%s:%d: ", level, (int)time(NULL),
+    fprintf(getLogStream(), "[%s] %d:%d:%s:%d: ", level, (int)time(NULL),
             getRank(), filename, lineno);
     #pragma GCC diagnostic push
     #pragma GCC diagnostic ignored "-Wformat-security"
-    fprintf(debugStream, std::forward<Args>(args) ...);
+    fprintf(getLogStream(), std::forward<Args>(args) ...);
     #pragma GCC diagnostic pop
-    fprintf(debugStream, "\n");                               
-    fflush(debugStream);                                      
+    fprintf(getLogStream(), "\n");                               
+    fflush(getLogStream());                                      
   }
+
+  enum LogLevel getLogLevel() const;
 
   /**
    * Define the detail of logging that Circle should output.
    */
-  void enableLogging(enum LogLevel level);
+  void setLogLevel(enum LogLevel level);
+
+  FILE* getLogStream() const;
 
   /**
    * Change run time flags.
@@ -254,12 +248,6 @@ int8_t checkpoint(void);
  * created by checkpoint.
  */
 int8_t read_restarts(void);
-
-/**
- * After your program has executed, give Circle a chance to clean up after
- * itself by calling this. This should be called after all Circle API calls.
- */
-void finalize(void);
 
 /**
  * Returns an elapsed time on the calling processor for benchmarking purposes.

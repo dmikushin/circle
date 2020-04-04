@@ -20,7 +20,7 @@ START_TEST(test_queue_pop_empty) {
   circle::internal::Queue q(nullptr);
 
   q.pop(result);
-  fail_if(result.size() > 0, "Something was poped from an empty queue.");
+  fail_if(result.size() > 0, "Something was poped from an empty queue->");
 }
 END_TEST
 
