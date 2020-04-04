@@ -947,9 +947,6 @@ void State::tokenIsSend() {
 /* given that we've received a token message,
  * receive it and update our state */
 void State::tokenRecv() {
-  /* get communicator */
-  MPI_Comm comm = comm;
-
   /* verify that we don't already have a token */
   if (token_is_local) {
     /* ERROR */
