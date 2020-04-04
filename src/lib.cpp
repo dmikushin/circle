@@ -15,8 +15,59 @@
 using namespace circle;
 using namespace circle::internal;
 
-/** if we initialized MPI, remember that we need to finalize it */
-static int must_finalize_mpi;
+namespace {
+
+class GlobalInit
+{
+  /** if we initialized MPI, remember that we need to finalize it */
+  int must_finalize_mpi;
+
+public :
+  GlobalInit() : must_finalize_mpi(0) {
+  }
+
+  ~GlobalInit() {
+    /**
+     * After your program has executed, give libcircle a chance to clean up after
+     * itself by calling this. This should be called after all libcircle API calls.
+     */
+    if (must_finalize_mpi) {
+      /* finalize MPI if we initialized it */
+      MPI_Finalize();
+    }
+  }
+
+  int init(int* argc, char **argv[]) {
+    /* determine whether we need to initialize MPI,
+     * and remember if we did so we finalize later */
+    must_finalize_mpi = 0;
+    int mpi_initialized;
+
+    if (MPI_Initialized(&mpi_initialized) != MPI_SUCCESS) {
+      // TODO LOG(LogLevel::Fatal, "Unable to initialize MPI.");
+      return -1;
+    }
+
+    if (mpi_initialized)
+      return 0;
+
+    /* not already initialized, so intialize MPI now */
+    if (MPI_Init(argc, argv) != MPI_SUCCESS) {
+      // TODO LOG(LogLevel::Fatal, "Unable to initialize MPI.");
+      return -1;
+    }
+
+    /* remember that we must finalize later */
+    must_finalize_mpi = 1;
+
+    return 0;
+  }
+};
+
+} // namespace
+
+/** Global initialization object that shall automatically destruct on exit. */
+static GlobalInit globalInit;
 
 /**
  * Initialize internal state needed by libcircle. This should be called before
@@ -27,29 +78,8 @@ static int must_finalize_mpi;
  *
  * @return the rank value of the current process.
  */
-int circle::init(int argc, char *argv[]) {
-  /* determine whether we need to initialize MPI,
-   * and remember if we did so we finalize later */
-  must_finalize_mpi = 0;
-  int mpi_initialized;
-
-  if (MPI_Initialized(&mpi_initialized) != MPI_SUCCESS) {
-    // TODO LOG(LogLevel::Fatal, "Unable to initialize MPI.");
-    return -1;
-  }
-
-  if (!mpi_initialized) {
-    /* not already initialized, so intialize MPI now */
-    if (MPI_Init(&argc, &argv) != MPI_SUCCESS) {
-      // TODO LOG(LogLevel::Fatal, "Unable to initialize MPI.");
-      return -1;
-    }
-
-    /* remember that we must finalize later */
-    must_finalize_mpi = 1;
-  }
-
-  return 0;
+int circle::init(int* argc, char **argv[]) {
+  return globalInit.init(argc, argv);
 }
 
 /**
@@ -69,17 +99,6 @@ void Circle::abort(void) {
   // TODO
   impl->queue.state->bcast_abort();
 #endif
-}
-
-/**
- * After your program has executed, give libcircle a chance to clean up after
- * itself by calling this. This should be called after all libcircle API calls.
- */
-void circle::finalize(void) {
-  if (must_finalize_mpi) {
-    /* finalize MPI if we initialized it */
-    MPI_Finalize();
-  }
 }
 
 /**

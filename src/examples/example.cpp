@@ -61,7 +61,7 @@ int main(int argc, char *argv[]) {
    * argv is the argument vector. The return value is the MPI rank of the
    * current process.
    */
-  circle::init(argc, argv);
+  circle::init(&argc, &argv);
 
   /*
    * Processing and creating work is done through callbacks. Here's how we tell
@@ -84,11 +84,6 @@ int main(int argc, char *argv[]) {
    * Now that everything is setup, lets execute everything.
    */
   example.execute();
-
-  /*
-   * Finally, give libcircle a chance to clean up after itself.
-   */
-  circle::finalize();
 
   cout << "Rank " << example.getRank() << " partial size = " << sztotal << endl;
 

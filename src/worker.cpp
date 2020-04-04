@@ -67,7 +67,7 @@ static void MPI_error_handler(MPI_Comm *comm, int *err, ...) {
   
   checkpoint();
 #endif
-  exit(EXIT_FAILURE);
+  abort();
 }
 #pragma GCC diagnostic warning "-Wunused-parameter"
 

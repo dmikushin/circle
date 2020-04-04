@@ -132,7 +132,7 @@ int main(int argc, char *argv[]) {
   /*
    * Do partial computations with libcircle.
    */
-  circle::init(argc, argv);
+  circle::init(&argc, &argv);
   circle::Circle example(
     my_create_some_work, my_process_some_work,
     my_reduce_init, my_reduce_op, my_reduce_fini,
@@ -146,7 +146,6 @@ int main(int argc, char *argv[]) {
   //circle::set_reduce_period(10);
 
   example.execute();
-  circle::finalize();
 
   return 0;
 }

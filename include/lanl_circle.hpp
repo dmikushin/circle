@@ -192,7 +192,7 @@ const char *backtrace(int skip);
  * Initialize internal state needed by Circle. This should be called before
  * any other Circle API call. This returns the MPI rank value.
  */
-int init(int argc, char *argv[]);
+int init(int *argc, char **argv[]);
 
 /**
  * Processing and creating work is done through callbacks. Here's how we tell
