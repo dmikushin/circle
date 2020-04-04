@@ -124,7 +124,10 @@ public :
 
     fprintf(debugStream, "%d:%d:%s:%d: ", (int)time(NULL),
             getRank(), filename, lineno);
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Wformat-security"
     fprintf(debugStream, std::forward<Args>(args) ...);
+    #pragma GCC diagnostic pop
     fprintf(debugStream, "\n");                               
     fflush(debugStream);                                      
   }
