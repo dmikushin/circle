@@ -143,7 +143,7 @@ int main(int argc, char *argv[]) {
    * Specify time period between consecutive reductions.
    * Here we set a time period of 10 seconds.
    */
-  //circle::set_reduce_period(10);
+  example.setReducePeriod(10);
 
   example.execute();
 
