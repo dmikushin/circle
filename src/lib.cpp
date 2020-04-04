@@ -5,6 +5,8 @@
 
 #include <mpi.h>
 #include <stdlib.h>
+#include <sigabrt.h>
+#include <sigsegv.h>
 
 #include "lanl_circle.hpp"
 #include "circle_impl.hpp"
@@ -24,6 +26,8 @@ class GlobalInit
 
 public :
   GlobalInit() : must_finalize_mpi(0) {
+    SigAbrtHandler::enable();
+    SigSegvHandler::enable();
   }
 
   ~GlobalInit() {

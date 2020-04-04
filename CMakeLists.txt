@@ -4,6 +4,10 @@ project(circle)
 
 enable_language(Fortran)
 
+if (NOT TARGET sighandlers)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/sighandlers)
+endif()
+
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 set(CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/modules)
 
@@ -27,8 +31,9 @@ file(GLOB SRCS
 
 add_library(${PROJECT_NAME} SHARED ${SRCS})
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/sighandlers/include)
 target_include_directories(${PROJECT_NAME} PRIVATE ${MPI_C_INCLUDE_PATH})
-target_link_libraries(${PROJECT_NAME} ${MPI_CXX_LIBRARIES} ${MPI_C_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} ${MPI_CXX_LIBRARIES} ${MPI_C_LIBRARIES} sighandlers)
 
 add_executable(check_checkpoint "${CMAKE_CURRENT_SOURCE_DIR}/src/tests/check_checkpoint.cpp")
 target_include_directories(check_checkpoint PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)

@@ -1,3 +1,6 @@
 [submodule "ThirdParty/filesystem"]
 	path = ThirdParty/filesystem
 	url = https://github.com/gulrak/filesystem.git
+[submodule "ThirdParty/sighandlers"]
+	path = ThirdParty/sighandlers
+	url = git@git.hypersolve.io:hddm/sighandlers.git
