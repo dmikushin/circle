@@ -71,46 +71,6 @@ static void MPI_error_handler(MPI_Comm *comm, int *err, ...) {
 }
 #pragma GCC diagnostic warning "-Wunused-parameter"
 
-#if 0
-// TODO class Handle or WorkQueue
-/**
- * Wrapper for pushing an element on the queue
- *
- */
-int Queue::enqueue(const std::vector<uint8_t> &element) {
-  return push(parent->impl->queue, element);
-}
-
-int Queue::enqueue(const std::string &element)
-{
-  std::vector<uint8_t> content(element.begin(), element.end());
-  return enqueue(content);
-}
-
-/**
- * Wrapper for popping an element
- */
-int Queue::dequeue(std::vector<uint8_t> &element)
-{
-  return pop(parent->impl->queue, element);
-}
-
-int Queue::dequeue(std::string &element)
-{
-  std::vector<uint8_t> content;
-  int result = dequeue(content);
-  std::copy(content.begin(), content.end(), element.begin());
-  return result;
-}
-
-/**
- * Wrapper for getting the local queue size
- */
-uint32_t Queue::localQueueSize(void) {
-  return (uint32_t)count;
-}
-#endif
-
 /**
  * Call this function to read in libcircle restart files.
  */
@@ -307,8 +267,6 @@ void Worker::mainLoop(State *sptr) {
   /* if any process is in the abort state,
    * set all to be in the abort state */
   sptr->abortReduce();
-
-  return;
 }
 
 Worker::Worker(Circle* parent_) : parent(parent_) { }

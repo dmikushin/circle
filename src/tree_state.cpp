@@ -23,19 +23,11 @@ using namespace circle::internal;
 /* given the process's rank and the number of ranks, this computes a k-ary
  * tree rooted at rank 0, the structure records the number of children
  * of the local rank and the list of their ranks */
-TreeState::TreeState(Circle* parent_, int rank_, int ranks_, int k) : parent(parent_) {
-  int i;
-
-  /* initialize fields */
-  rank = (int)rank_;
-  ranks = (int)ranks_;
-  parent_rank = MPI_PROC_NULL;
-  children = 0;
-  child_ranks = NULL;
-
+TreeState::TreeState(Circle* parent_, int rank_, int ranks_, int maxChildren_) :
+  parent(parent_), rank(rank_), ranks(ranks_),
+  parent_rank(MPI_PROC_NULL), children(0), child_ranks(nullptr),
   /* compute the maximum number of children this task may have */
-  int max_children = k;
-
+  max_children(maxChildren_) {
   /* allocate memory to hold list of children ranks */
   if (max_children > 0) {
     size_t bytes = (size_t)max_children * sizeof(int);
@@ -48,7 +40,7 @@ TreeState::TreeState(Circle* parent_, int rank_, int ranks_, int k) : parent(par
   }
 
   /* initialize all ranks to NULL */
-  for (i = 0; i < max_children; i++) {
+  for (int i = 0; i < max_children; i++) {
     child_ranks[i] = MPI_PROC_NULL;
   }
 
@@ -76,14 +68,10 @@ TreeState::TreeState(Circle* parent_, int rank_, int ranks_, int k) : parent(par
       child_ranks[i] = left + i;
     }
   }
-
-  return;
 }
 
 TreeState::~TreeState() {
   /* free child rank list */
   free(&child_ranks);
-
-  return;
 }
 

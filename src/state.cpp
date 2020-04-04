@@ -325,8 +325,6 @@ void State::reduceCheck(int count, int cleanup) {
       }
     }
   }
-
-  return;
 }
 
 /* executes synchronous reduction with user reduce callbacks */
@@ -422,8 +420,6 @@ void State::reduceSync(int count) {
       (*(parent->reduce_fini_cb))(parent, resultbuf, resultsize);
     }
   }
-
-  return;
 }
 
 /* marks our state as ready for the barrier */
@@ -768,8 +764,6 @@ void State::abortReduce() {
   /* finally, set our abort flags */
   ABORT_FLAG = (int8_t)flag;
   abort_state = flag;
-
-  return;
 }
 
 /**
@@ -783,8 +777,6 @@ void bcast_abort(void) {
   /* set global abort variable, this will kick off an abort bcast
    * the next time the worker loop calls abort_check */
   ABORT_FLAG = 1;
-
-  return;
 }
 
 /**
@@ -849,8 +841,6 @@ void State::abortStart(int cleanup) {
   if (k > 0) {
     abort_outstanding = 1;
   }
-
-  return;
 }
 
 /**
@@ -899,8 +889,6 @@ void State::abortCheck(int cleanup) {
       abort_outstanding = 0;
     }
   }
-
-  return;
 }
 
 /* send token using MPI_Issend and update state */
@@ -919,8 +907,6 @@ void State::tokenIsSend() {
 
   /* remember that we no longer have the token */
   token_is_local = 0;
-
-  return;
 }
 
 /* given that we've received a token message,
@@ -990,8 +976,6 @@ void State::tokenRecv() {
     /* set our state to terminate */
     token_proc = TERMINATE;
   }
-
-  return;
 }
 
 void State::tokenCheck() {
@@ -1005,8 +989,6 @@ void State::tokenCheck() {
     /* found an incoming token, receive and process it */
     tokenRecv();
   }
-
-  return;
 }
 
 /**
@@ -1315,8 +1297,6 @@ static void spread_counts(int *sizes, int ranks, int count) {
     sizes[i] = base;
     i++;
   }
-
-  return;
 }
 
 /**
@@ -1551,8 +1531,6 @@ void State::workreqCheck(Queue *qp, int cleanup) {
      * requesting ranks */
     sendWorkToMany(qp, requestors, rcount);
   }
-
-  return;
 }
 
 /**
