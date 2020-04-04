@@ -122,7 +122,19 @@ public :
   {
     if (logLevel_ > logLevel) return;
 
-    fprintf(debugStream, "%d:%d:%s:%d: ", (int)time(NULL),
+    const char* level = "NONE";
+    if (logLevel_ == LogLevel::Fatal)
+      level = "FATL";
+    else if (logLevel_ == LogLevel::Error)
+      level = "ERRO";
+    else if (logLevel_ == LogLevel::Warning)
+      level = "WARN";
+    else if (logLevel_ == LogLevel::Info)
+      level = "INFO";
+    else if (logLevel_ == LogLevel::Debug)
+      level = "DEBG";
+
+    fprintf(debugStream, "[%s] %d:%d:%s:%d: ", level, (int)time(NULL),
             getRank(), filename, lineno);
     #pragma GCC diagnostic push
     #pragma GCC diagnostic ignored "-Wformat-security"

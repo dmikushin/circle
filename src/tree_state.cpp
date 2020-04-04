@@ -55,7 +55,6 @@ TreeState::TreeState(Circle* parent_, int rank_, int ranks_, int k) : parent(par
   /* compute rank of our parent if we have one */
   if (rank > 0) {
     parent_rank = (rank - 1) / k;
-    printf("Rank %d has parent_rank = %d\n", rank, parent_rank);
   }
 
   /* identify ranks of what would be leftmost and rightmost children */
