@@ -26,13 +26,8 @@ using namespace circle::internal;
 State::State(Circle* parent_) : parent(parent_), comm(parent_->impl->comm) {
 
   /* get our rank and number of ranks in communicator */
-  int rank, size;
   MPI_Comm_rank(comm, &rank);
   MPI_Comm_size(comm, &size);
-
-  /* set rank and size in state */
-  rank = rank;
-  size = size;
 
   /* start the termination token on rank 0 */
   token_is_local = 0;
