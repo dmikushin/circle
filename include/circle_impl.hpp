@@ -26,7 +26,7 @@ public : // TODO remove
   RuntimeFlags runtimeFlags;
 
   /** The debug stream for all logging messages. */
-  FILE *debugStream;
+  FILE *logStream;
 
   /* width of internal communication k-ary tree */
   int tree_width;
@@ -50,11 +50,6 @@ public :
 
   friend class Circle;
 };
-
-/**
- *  A struct which holds a reference to all input given through the API.
- */
-extern Circle circle_;
 
 } // namespace internal
 } // namespace circle
