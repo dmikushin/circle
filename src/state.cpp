@@ -1504,7 +1504,6 @@ void State::workreceiptCheck(Queue *qp) {
 void State::workreqCheck(Queue *qp, int cleanup) {
   /* record list of requesting ranks in requestors
    * and number in rcount */
-  int *requestors = requestors;
   int rcount = 0;
 
   /* pick off any work request mesasges we have */
