@@ -52,7 +52,7 @@ public : // TODO remove
 
 public :
 
-  TreeState(Circle* parent_, int rank, int ranks, int k, MPI_Comm comm);
+  TreeState(Circle* parent_, int rank, int ranks, int k);
 
   ~TreeState();
 
@@ -68,7 +68,7 @@ class State {
 
 public : // TODO remove
   /* communicator and our rank and its size */
-  MPI_Comm comm;
+  MPI_Comm& comm;
   int rank;
   int size;
 

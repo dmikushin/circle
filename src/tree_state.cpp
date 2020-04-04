@@ -23,12 +23,12 @@ using namespace circle::internal;
 /* given the process's rank and the number of ranks, this computes a k-ary
  * tree rooted at rank 0, the structure records the number of children
  * of the local rank and the list of their ranks */
-TreeState::TreeState(Circle* parent_, int rank, int ranks, int k, MPI_Comm comm) : parent(parent_) {
+TreeState::TreeState(Circle* parent_, int rank_, int ranks_, int k) : parent(parent_) {
   int i;
 
   /* initialize fields */
-  rank = (int)rank;
-  ranks = (int)ranks;
+  rank = (int)rank_;
+  ranks = (int)ranks_;
   parent_rank = MPI_PROC_NULL;
   children = 0;
   child_ranks = NULL;
@@ -43,7 +43,7 @@ TreeState::TreeState(Circle* parent_, int rank, int ranks, int k, MPI_Comm comm)
 
     if (child_ranks == NULL) {
       LOG(LogLevel::Fatal, "Failed to allocate memory for list of children.");
-      MPI_Abort(comm, CIRCLE_MPI_ERROR);
+      MPI_Abort(parent->impl->comm, CIRCLE_MPI_ERROR);
     }
   }
 
@@ -55,6 +55,7 @@ TreeState::TreeState(Circle* parent_, int rank, int ranks, int k, MPI_Comm comm)
   /* compute rank of our parent if we have one */
   if (rank > 0) {
     parent_rank = (rank - 1) / k;
+    printf("Rank %d has parent_rank = %d\n", rank, parent_rank);
   }
 
   /* identify ranks of what would be leftmost and rightmost children */

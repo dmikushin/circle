@@ -330,7 +330,7 @@ int Worker::execute() {
   State *sptr = &state;
 
   /* get MPI communicator */
-  MPI_Comm comm = parent->impl->comm;
+  MPI_Comm& comm = parent->impl->comm;
 
   /* get our rank and the size of the communicator */
   int rank, size;

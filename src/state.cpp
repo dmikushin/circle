@@ -23,8 +23,7 @@ using namespace circle::internal;
 /**
  * Initializes all variables local to a rank
  */
-State::State(Circle* parent_) : parent(parent_) {
-  comm = parent->impl->comm;
+State::State(Circle* parent_) : parent(parent_), comm(parent_->impl->comm) {
 
   /* get our rank and number of ranks in communicator */
   int rank, size;
@@ -78,7 +77,7 @@ State::State(Circle* parent_) : parent(parent_) {
 
   /* create our collective tree */
   int tree_width = parent->impl->tree_width;
-  tree = new TreeState(parent, rank, size, tree_width, comm);
+  tree = new TreeState(parent, rank, size, tree_width);
 
   /* init state for progress reduction operations */
   reduce_enabled = 0;
@@ -146,9 +145,6 @@ void State::reduceCheck(int count, int cleanup) {
   int i;
   int flag;
   MPI_Status status;
-
-  /* get our communicator */
-  MPI_Comm comm = comm;
 
   /* get info about tree */
   int parent_rank = tree->parent_rank;
@@ -343,9 +339,6 @@ void State::reduceSync(int count) {
   int i;
   MPI_Status status;
 
-  /* get our communicator */
-  MPI_Comm comm = comm;
-
   /* get info about tree */
   int parent_rank = tree->parent_rank;
   int children = tree->children;
@@ -450,9 +443,6 @@ int State::barrierTest() {
   if (!barrier_started) {
     return 0;
   }
-
-  /* get our communicator */
-  MPI_Comm comm = comm;
 
   /* get info about tree */
   int parent_rank = tree->parent_rank;
@@ -617,9 +607,6 @@ int State::checkForTermAllReduce() {
   int flag;
   MPI_Status status;
 
-  /* get our communicator */
-  MPI_Comm comm = comm;
-
   /* get info about tree */
   int parent_rank = tree->parent_rank;
   int children = tree->children;
@@ -739,9 +726,6 @@ int State::checkForTermAllReduce() {
  * the abort state, and if so, set all ranks to be in abort state */
 void State::abortReduce() {
   MPI_Status status;
-
-  /* get our communicator */
-  MPI_Comm comm = comm;
 
   /* get info about tree */
   int parent_rank = tree->parent_rank;
@@ -1155,9 +1139,6 @@ int8_t State::extendOffsets(int32_t size) {
 
 /* we execute this function when we have detected incoming work messages */
 int32_t State::workReceive(Queue *qp, int source, int size) {
-  /* get communicator */
-  MPI_Comm comm = comm;
-
   /* this shouldn't happen, but let's check so we don't blow out
    * memory allocation below */
   if (size <= 0) {
@@ -1264,9 +1245,6 @@ int32_t State::workReceive(Queue *qp, int source, int size) {
  */
 int32_t State::requestWork(Queue *qp, int cleanup) {
   int rc = 0;
-
-  /* get communicator */
-  MPI_Comm comm = comm;
 
   /* check whether we have a work request outstanding, and check for
    * a reply if we do, otherwise send a request so long as we're not
@@ -1416,9 +1394,6 @@ int State::sendWork(Queue *qp, int dest, int32_t count) {
   /* TODO; use isend to avoid deadlock, but in that case, be careful
    * to not overwrite space in queue before sends complete */
 
-  /* get communicator */
-  MPI_Comm comm = comm;
-
   /* send item count, total bytes, and offsets of each item */
   MPI_Send(offsets_send_buf, numoffsets, MPI_INT, dest,
            CIRCLE_TAG_WORK_REPLY, comm);
@@ -1499,9 +1474,6 @@ void State::sendWorkToMany(Queue *qp, int *requestors, int rcount) {
  * Checks for outstanding work requests
  */
 void State::workreceiptCheck(Queue *qp) {
-  /* get MPI communicator */
-  MPI_Comm comm = comm;
-
   /* pick off any work request mesasges we have */
   while (work_outstanding > 0) {
     /* Test to see if we have any work receipt message to receive */
