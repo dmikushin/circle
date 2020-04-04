@@ -26,16 +26,7 @@ using namespace circle::internal;
  *
  * @see Queue::free
  */
-Queue::Queue(Circle* parent_) : parent(parent_) {
-
-  /* Base address of string pool */
-  base.resize(CIRCLE_MAX_STRING_LEN * CIRCLE_INITIAL_INTERNAL_QUEUE_SIZE);
-  count = 0;
-  head = 0;
-
-  /* String pointer array */
-  strings.resize(CIRCLE_INITIAL_INTERNAL_QUEUE_SIZE);
-}
+Queue::Queue(Circle* parent_) : parent(parent_), count(0), head(0) { }
 
 int Queue::getCount() const {
   return count;
