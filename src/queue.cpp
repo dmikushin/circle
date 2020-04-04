@@ -3,7 +3,7 @@
  * This file contains functions related to the local queue structure.
  */
 
-#include <assert.h>
+#include <fstream>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -240,30 +240,19 @@ int8_t Queue::read(int rank) {
 
   LOG(LogLevel::Debug, "Attempting to open %s.", filename);
 
-  FILE *checkpoint_file = fopen(filename, "r");
+  std::ifstream checkpoint_file(filename);
 
-  if (checkpoint_file == NULL) {
+  if (!checkpoint_file.is_open()) {
     LOG(LogLevel::Error, "Unable to open checkpoint file %s", filename);
     return -1;
   }
 
   LOG(LogLevel::Debug, "Checkpoint file opened.");
 
-  uint32_t len = 0;
-  char str[CIRCLE_MAX_STRING_LEN];
-
-  while (fgets(str, CIRCLE_MAX_STRING_LEN, checkpoint_file) != NULL) {
-    /* TODO: check that real_len fits within uint32_t */
-    size_t real_len = strlen(str);
-    len = (uint32_t)real_len;
-
-    if (len > 0) {
-      str[len - 1] = '\0';
-    } else {
-      continue;
-    }
-
-    std::vector<uint8_t> content(str, str + len);
+  std::string str;
+  while (std::getline(checkpoint_file, str))
+  {
+    std::vector<uint8_t> content(str.begin(), str.end());
     if (push(content) < 0) {
       LOG(LogLevel::Error, "Failed to push element on queue \"%s\"", str);
     }
@@ -271,8 +260,8 @@ int8_t Queue::read(int rank) {
     LOG(LogLevel::Debug, "Pushed %s onto queue.", str);
   }
 
-  int fclose_rc = fclose(checkpoint_file);
-  return (int8_t)fclose_rc;
+  checkpoint_file.close();
+  return 0;
 }
 
 /**
