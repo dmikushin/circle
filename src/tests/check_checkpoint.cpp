@@ -16,9 +16,10 @@ START_TEST(test_checkpoint_single_write) {
 
   out_q.push(test_string);
   checkpoint_write_ret = out_q.write(fakerank);
-  fail_unless(checkpoint_write_ret > 0,
+  fail_unless(checkpoint_write_ret == 0,
               "The checkpoint write function did not return a positive value.");
 }
+END_TEST
 
 START_TEST(test_checkpoint_single_read) {
   const std::string test_string = "Here's a test string!";
@@ -31,7 +32,7 @@ START_TEST(test_checkpoint_single_read) {
   circle::internal::Queue in_q(NULL);
 
   checkpoint_read_ret = in_q.read(fakerank);
-  fail_unless(checkpoint_read_ret > 0,
+  fail_unless(checkpoint_read_ret == 0,
               "The checkpoint read function did not return a positive value.");
 
   in_q.pop(result);
