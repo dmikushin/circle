@@ -16,7 +16,8 @@ Circle::Circle(cb createCallback_, cb processCallback_,
   RuntimeFlags runtimeFlags_) :
   debugStream(stdout),
   create_cb(createCallback_), process_cb(processCallback_),
-  reduce_init_cb(nullptr), reduce_op_cb(nullptr), reduce_fini_cb(nullptr) {
+  reduce_init_cb(nullptr), reduce_op_cb(nullptr), reduce_fini_cb(nullptr),
+  reduce_buf(nullptr) {
   logLevel = LogLevel::Fatal;
 
   /* initialize reduction period to 0 seconds
@@ -38,7 +39,7 @@ Circle::Circle(circle::cb createCallback_, circle::cb processCallback_,
   debugStream(stdout),
   create_cb(createCallback_), process_cb(processCallback_),
   reduce_init_cb(reduceInitCallback_), reduce_op_cb(reduceOperationCallback_),
-  reduce_fini_cb(reduceFinalizeCallback_) {
+  reduce_fini_cb(reduceFinalizeCallback_), reduce_buf(nullptr) {
   logLevel = LogLevel::Fatal;
 
   /* initialize reduction period to 0 seconds
