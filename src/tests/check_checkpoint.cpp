@@ -4,13 +4,12 @@
 #include <stdlib.h>
 #include <string>
 
-START_TEST(test_checkpoint_single_read_write) {
+START_TEST(test_checkpoint_single_write) {
   const std::string test_string = "Here's a test string!";
   std::string result;
   int fakerank = 5;
 
   int checkpoint_write_ret = -1;
-  int checkpoint_read_ret = -1;
 
   circle::init(0, NULL);
   circle::internal::Queue out_q(NULL);
@@ -19,8 +18,14 @@ START_TEST(test_checkpoint_single_read_write) {
   checkpoint_write_ret = out_q.write(fakerank);
   fail_unless(checkpoint_write_ret > 0,
               "The checkpoint write function did not return a positive value.");
+}
 
-  circle::finalize();
+START_TEST(test_checkpoint_single_read) {
+  const std::string test_string = "Here's a test string!";
+  std::string result;
+  int fakerank = 5;
+
+  int checkpoint_read_ret = -1;
 
   circle::init(0, NULL);
   circle::internal::Queue in_q(NULL);
@@ -35,8 +40,6 @@ START_TEST(test_checkpoint_single_read_write) {
 
   fail_unless(test_string == result,
               "Result poped from the queue does not match original.");
-
-  circle::finalize();
 }
 END_TEST
 
@@ -44,7 +47,8 @@ Suite *check_checkpoint_suite(void) {
   Suite *s = suite_create("check_checkpoint");
   TCase *tc_core = tcase_create("Core");
 
-  tcase_add_test(tc_core, test_checkpoint_single_read_write);
+  tcase_add_test(tc_core, test_checkpoint_single_write);
+  tcase_add_test(tc_core, test_checkpoint_single_read);
 
   suite_add_tcase(s, tc_core);
 

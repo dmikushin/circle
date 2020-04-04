@@ -6,25 +6,21 @@
 #include "queue.hpp"
 
 START_TEST(test_queue_init_free) {
-  circle::init(0, NULL);
+  circle::init(nullptr, nullptr);
 
-  circle::internal::Queue q(NULL);
-
-  circle::finalize();
+  circle::internal::Queue q(nullptr);
 }
 END_TEST
 
 START_TEST(test_queue_pop_empty) {
   std::string result;
 
-  circle::init(0, NULL);
+  circle::init(nullptr, nullptr);
 
-  circle::internal::Queue q(NULL);
+  circle::internal::Queue q(nullptr);
 
   q.pop(result);
   fail_if(result.size() > 0, "Something was poped from an empty queue.");
-
-  circle::finalize();
 }
 END_TEST
 
@@ -32,9 +28,9 @@ START_TEST(test_queue_single_push_pop) {
   const std::string test_string = "Here's a test string!";
   std::string result;
 
-  circle::init(0, NULL);
+  circle::init(nullptr, nullptr);
 
-  circle::internal::Queue q(NULL);
+  circle::internal::Queue q(nullptr);
 
   q.push(test_string);
   fail_unless(q.getCount() == 1,
@@ -46,8 +42,6 @@ START_TEST(test_queue_single_push_pop) {
 
   fail_unless(test_string == result,
               "Result poped from the queue does not match original.");
-
-  circle::finalize();
 }
 END_TEST
 
@@ -60,9 +54,9 @@ START_TEST(test_queue_multiple_push_pop) {
       "seventh test string", "eighth test string", "nineth test string",
       "tenth test string"};
 
-  circle::init(0, NULL);
+  circle::init(nullptr, nullptr);
 
-  circle::internal::Queue q(NULL);
+  circle::internal::Queue q(nullptr);
 
   /* Warm it up a bit */
   q.push(test_strings[0]);
@@ -118,8 +112,6 @@ START_TEST(test_queue_multiple_push_pop) {
 
   fail_unless(q.getCount() == 2,
               "Queue count was not correct after several operations.");
-
-  circle::finalize();
 }
 END_TEST
 
