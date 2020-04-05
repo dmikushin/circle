@@ -15,13 +15,17 @@ using namespace circle::internal;
  * Initializes all variables local to a rank
  */
 State::State(Circle *parent_, circle::CallbackFunc processCallback_,
-  circle::reduceInitCallbackFunc reduceInitCallback_, circle::reduceOperationCallbackFunc reduceOperationCallback_,
-  circle::reduceFinalizeCallbackFunc reduceFinalizeCallback_,
-  const MPI_Comm& comm_, Queue* queue_, void *&reduce_buf_, size_t &reduce_buf_size_) :
-  processCallback(processCallback_), reduceInitCallback(reduceInitCallback_),
-  reduceOperationCallback(reduceOperationCallback_), reduceFinalizeCallback(reduceFinalizeCallback_),
-  parent(parent_), comm(comm_), queue(queue_), ABORT_FLAG(0),
-  reduce_buf(reduce_buf_), reduce_buf_size(reduce_buf_size_) {
+             circle::reduceInitCallbackFunc reduceInitCallback_,
+             circle::reduceOperationCallbackFunc reduceOperationCallback_,
+             circle::reduceFinalizeCallbackFunc reduceFinalizeCallback_,
+             const MPI_Comm &comm_, Queue *queue_, void *&reduce_buf_,
+             size_t &reduce_buf_size_)
+    : processCallback(processCallback_),
+      reduceInitCallback(reduceInitCallback_),
+      reduceOperationCallback(reduceOperationCallback_),
+      reduceFinalizeCallback(reduceFinalizeCallback_), parent(parent_),
+      comm(comm_), queue(queue_), ABORT_FLAG(0), reduce_buf(reduce_buf_),
+      reduce_buf_size(reduce_buf_size_) {
 
   /* get our rank and number of ranks in communicator */
   MPI_Comm_rank(comm, &rank);
@@ -206,7 +210,8 @@ void State::reduceCheck(int count, int cleanup) {
           if (reduceOperationCallback != NULL) {
             void *currbuf = reduce_buf;
             size_t currsize = reduce_buf_size;
-            (*(reduceOperationCallback))(parent, currbuf, currsize, inbuf, insize);
+            (*(reduceOperationCallback))(parent, currbuf, currsize, inbuf,
+                                         insize);
           }
         }
 
@@ -227,8 +232,8 @@ void State::reduceCheck(int count, int cleanup) {
         local_reduce_buf[2] = (long long int)bytes;
 
         /* send partial result to parent */
-        MPI_Send(local_reduce_buf, 3, MPI_LONG_LONG, parentRank, CIRCLE_TAG_REDUCE,
-                 comm);
+        MPI_Send(local_reduce_buf, 3, MPI_LONG_LONG, parentRank,
+                 CIRCLE_TAG_REDUCE, comm);
 
         /* also send along user data if any, and if it is valid */
         if (bytes > 0 && local_reduce_buf[0] == MSG_VALID) {
@@ -239,7 +244,8 @@ void State::reduceCheck(int count, int cleanup) {
       } else {
         /* we're the root, print the results if we have valid data */
         if (local_reduce_buf[0] == MSG_VALID) {
-          LOG(LogLevel::Info, "Objects processed: %lld ...", local_reduce_buf[1]);
+          LOG(LogLevel::Info, "Objects processed: %lld ...",
+              local_reduce_buf[1]);
 
           /* invoke callback on root to deliver final result */
           if (reduceFinalizeCallback != NULL) {
@@ -291,8 +297,8 @@ void State::reduceCheck(int count, int cleanup) {
        * if we have one */
       if (parentRank != MPI_PROC_NULL) {
         local_reduce_buf[0] = MSG_INVALID;
-        MPI_Send(local_reduce_buf, 3, MPI_LONG_LONG, parentRank, CIRCLE_TAG_REDUCE,
-                 comm);
+        MPI_Send(local_reduce_buf, 3, MPI_LONG_LONG, parentRank,
+                 CIRCLE_TAG_REDUCE, comm);
       }
     }
 
@@ -395,7 +401,8 @@ void State::reduceSync(int count) {
     local_reduce_buf[2] = (long long int)bytes;
 
     /* send partial result to parent */
-    MPI_Send(local_reduce_buf, 3, MPI_LONG_LONG, parentRank, CIRCLE_TAG_REDUCE, comm);
+    MPI_Send(local_reduce_buf, 3, MPI_LONG_LONG, parentRank, CIRCLE_TAG_REDUCE,
+             comm);
 
     /* also send along user data if any */
     if (bytes > 0) {
@@ -1294,8 +1301,7 @@ void State::sendNoWork(int dest) {
   no_work[1] = 0;
 
   MPI_Request r;
-  MPI_Isend(&no_work, 1, MPI_INT, dest, CIRCLE_TAG_WORK_REPLY,
-            comm, &r);
+  MPI_Isend(&no_work, 1, MPI_INT, dest, CIRCLE_TAG_WORK_REPLY, comm, &r);
   MPI_Wait(&r, MPI_STATUS_IGNORE);
 }
 
@@ -1727,14 +1733,14 @@ void State::printSummary() {
   /* gather and reduce summary info */
   MPI_Gather(&local_objects_processed, 1, MPI_INT,
              &total_objects_processed_array[0], 1, MPI_INT, 0, comm);
-  MPI_Gather(&local_work_requested, 1, MPI_INT,
-             &total_work_requests_array[0], 1, MPI_INT, 0, comm);
+  MPI_Gather(&local_work_requested, 1, MPI_INT, &total_work_requests_array[0],
+             1, MPI_INT, 0, comm);
   MPI_Gather(&local_no_work_received, 1, MPI_INT,
              &total_no_work_received_array[0], 1, MPI_INT, 0, comm);
 
   int total_objects_processed = 0;
-  MPI_Reduce(&local_objects_processed, &total_objects_processed, 1,
-             MPI_INT, MPI_SUM, 0, comm);
+  MPI_Reduce(&local_objects_processed, &total_objects_processed, 1, MPI_INT,
+             MPI_SUM, 0, comm);
 
   /* print summary from rank 0 */
   if (rank == 0) {
@@ -1758,4 +1764,3 @@ void State::printSummary() {
   free(&total_work_requests_array);
   free(&total_objects_processed_array);
 }
-

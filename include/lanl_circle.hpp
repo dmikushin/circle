@@ -55,10 +55,10 @@ typedef void (*CallbackFunc)(circle::Circle *circle);
  */
 typedef void (*reduceInitCallbackFunc)(circle::Circle *circle);
 typedef void (*reduceOperationCallbackFunc)(circle::Circle *circle,
-		                const void *buf1, size_t size1,
-                                const void *buf2, size_t size2);
+                                            const void *buf1, size_t size1,
+                                            const void *buf2, size_t size2);
 typedef void (*reduceFinalizeCallbackFunc)(circle::Circle *circle,
-		                  const void *buf, size_t size);
+                                           const void *buf, size_t size);
 
 namespace internal {
 
@@ -67,32 +67,35 @@ class CircleImpl;
 } // namespace internal
 
 class Circle {
-  internal::CircleImpl* impl;
+  internal::CircleImpl *impl;
 
-public :
-
+public:
   /**
    * Initialize a Circle instance for parallel processing.
    */
-  Circle(circle::CallbackFunc createCallback, circle::CallbackFunc processCallback,
+  Circle(circle::CallbackFunc createCallback,
+         circle::CallbackFunc processCallback,
          circle::RuntimeFlags runtimeFlags);
 
   /**
    * Initialize a Circle instance for parallel processing and reduction.
    */
-  Circle(circle::CallbackFunc createCallback, circle::CallbackFunc processCallback,
-         circle::reduceInitCallbackFunc reduceInitCallback, circle::reduceOperationCallbackFunc reduceOperationCallback,
-	 circle::reduceFinalizeCallbackFunc reduceFinalizeCallback,
+  Circle(circle::CallbackFunc createCallback,
+         circle::CallbackFunc processCallback,
+         circle::reduceInitCallbackFunc reduceInitCallback,
+         circle::reduceOperationCallbackFunc reduceOperationCallback,
+         circle::reduceFinalizeCallbackFunc reduceFinalizeCallback,
          circle::RuntimeFlags runtimeFlags);
 
   ~Circle();
 
-  template<typename ... Args>
-  void log(LogLevel logLevel_, const char* filename, int lineno, Args&& ... args) 
-  {
-    if (logLevel_ > getLogLevel()) return;
+  template <typename... Args>
+  void log(LogLevel logLevel_, const char *filename, int lineno,
+           Args &&... args) {
+    if (logLevel_ > getLogLevel())
+      return;
 
-    const char* level = "NONE";
+    const char *level = "NONE";
     if (logLevel_ == LogLevel::Fatal)
       level = "FATL";
     else if (logLevel_ == LogLevel::Error)
@@ -106,12 +109,12 @@ public :
 
     fprintf(getLogStream(), "[%s] %d:%d:%s:%d: ", level, (int)time(NULL),
             getRank(), filename, lineno);
-    #pragma GCC diagnostic push
-    #pragma GCC diagnostic ignored "-Wformat-security"
-    fprintf(getLogStream(), std::forward<Args>(args) ...);
-    #pragma GCC diagnostic pop
-    fprintf(getLogStream(), "\n");                               
-    fflush(getLogStream());                                      
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-security"
+    fprintf(getLogStream(), std::forward<Args>(args)...);
+#pragma GCC diagnostic pop
+    fprintf(getLogStream(), "\n");
+    fflush(getLogStream());
   }
 
   enum LogLevel getLogLevel() const;
@@ -121,7 +124,7 @@ public :
    */
   void setLogLevel(enum LogLevel level);
 
-  FILE* getLogStream() const;
+  FILE *getLogStream() const;
 
   enum RuntimeFlags getRuntimeFlags() const;
 

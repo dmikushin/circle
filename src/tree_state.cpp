@@ -11,8 +11,8 @@
 #include <stdlib.h>
 #include <sys/stat.h>
 
-#include "lanl_circle.hpp"
 #include "circle.hpp"
+#include "lanl_circle.hpp"
 #include "log.hpp"
 #include "token.hpp"
 
@@ -22,10 +22,10 @@ using namespace circle::internal;
 /* given the process's rank and the number of ranks, this computes a k-ary
  * tree rooted at rank 0, the structure records the number of children
  * of the local rank and the list of their ranks */
-TreeState::TreeState(Circle* parent_, const MPI_Comm& comm, int rank_, int nranks_, int maxChildren_) :
-  parent(parent_), rank(rank_), nranks(nranks_),
-  parentRank(MPI_PROC_NULL), nchildren(0), childrenRanks(nullptr),
-  maxChildren(maxChildren_) {
+TreeState::TreeState(Circle *parent_, const MPI_Comm &comm, int rank_,
+                     int nranks_, int maxChildren_)
+    : parent(parent_), rank(rank_), nranks(nranks_), parentRank(MPI_PROC_NULL),
+      nchildren(0), childrenRanks(nullptr), maxChildren(maxChildren_) {
   /* allocate memory to hold list of children ranks */
   if (maxChildren > 0) {
     size_t bytes = (size_t)maxChildren * sizeof(int);
@@ -78,4 +78,3 @@ int TreeState::getChildrenCount() const { return nchildren; }
 int TreeState::getParentRank() const { return parentRank; }
 
 const int *TreeState::getChildrenRanks() const { return childrenRanks; }
-

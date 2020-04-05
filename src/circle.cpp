@@ -1,10 +1,10 @@
 #include <mpi.h>
-#include <stdlib.h>
 #include <sigabrt.h>
 #include <sigsegv.h>
+#include <stdlib.h>
 
-#include "lanl_circle.hpp"
 #include "circle.hpp"
+#include "lanl_circle.hpp"
 #include "log.hpp"
 #include "token.hpp"
 
@@ -16,12 +16,11 @@ static char WORK_COMM_NAME[32] = "Libcircle Work Comm";
 
 namespace {
 
-class GlobalInit
-{
+class GlobalInit {
   /** if we initialized MPI, remember that we need to finalize it */
   int must_finalize_mpi;
 
-public :
+public:
   GlobalInit() : must_finalize_mpi(0) {
     SigAbrtHandler::enable();
     SigSegvHandler::enable();
@@ -29,8 +28,9 @@ public :
 
   ~GlobalInit() {
     /**
-     * After your program has executed, give libcircle a chance to clean up after
-     * itself by calling this. This should be called after all libcircle API calls.
+     * After your program has executed, give libcircle a chance to clean up
+     * after itself by calling this. This should be called after all libcircle
+     * API calls.
      */
     if (must_finalize_mpi) {
       /* finalize MPI if we initialized it */
@@ -38,7 +38,7 @@ public :
     }
   }
 
-  int init(int* argc, char **argv[]) {
+  int init(int *argc, char **argv[]) {
     /* determine whether we need to initialize MPI,
      * and remember if we did so we finalize later */
     must_finalize_mpi = 0;
@@ -79,7 +79,7 @@ static GlobalInit globalInit;
  *
  * @return the rank value of the current process.
  */
-int circle::init(int* argc, char **argv[]) {
+int circle::init(int *argc, char **argv[]) {
   return globalInit.init(argc, argv);
 }
 
@@ -95,29 +95,25 @@ int circle::init(int* argc, char **argv[]) {
 void CircleImpl::execute() {
   /* initialize all local state variables */
   State state(parent, processCallback, reduceInitCallback,
-    reduceOperationCallback, reduceFinalizeCallback,
-    comm, queue, reduce_buf, reduce_buf_size);
+              reduceOperationCallback, reduceFinalizeCallback, comm, queue,
+              reduce_buf, reduce_buf_size);
 
   /* print settings of some runtime tunables */
-  if ((runtimeFlags & RuntimeFlags::SplitEqual) !=
-      RuntimeFlags::None) {
+  if ((runtimeFlags & RuntimeFlags::SplitEqual) != RuntimeFlags::None) {
     LOG(LogLevel::Debug, "Using equalized load splitting.");
   }
 
-  if ((runtimeFlags & RuntimeFlags::SplitRandom) !=
-      RuntimeFlags::None) {
+  if ((runtimeFlags & RuntimeFlags::SplitRandom) != RuntimeFlags::None) {
     LOG(LogLevel::Debug, "Using randomized load splitting.");
   }
 
-  if ((runtimeFlags & RuntimeFlags::CreateGlobal) !=
-      RuntimeFlags::None) {
+  if ((runtimeFlags & RuntimeFlags::CreateGlobal) != RuntimeFlags::None) {
     LOG(LogLevel::Debug, "Create callback enabled on all ranks.");
   } else {
     LOG(LogLevel::Debug, "Create callback enabled on rank 0 only.");
   }
 
-  if ((runtimeFlags & RuntimeFlags::TermTree) !=
-      RuntimeFlags::None) {
+  if ((runtimeFlags & RuntimeFlags::TermTree) != RuntimeFlags::None) {
     LOG(LogLevel::Debug, "Using tree termination detection.");
   } else {
     LOG(LogLevel::Debug, "Using circle termination detection.");
@@ -132,8 +128,8 @@ void CircleImpl::execute() {
 
   /* add initial work to queues by calling create_cb,
    * only invoke on master unless CREATE_GLOBAL is set */
-  if (rank == 0 || (runtimeFlags & RuntimeFlags::CreateGlobal) !=
-                       RuntimeFlags::None) {
+  if (rank == 0 ||
+      (runtimeFlags & RuntimeFlags::CreateGlobal) != RuntimeFlags::None) {
     (*(parent->impl->createCallback))(parent);
   }
 
@@ -154,9 +150,7 @@ void CircleImpl::execute() {
  * Once you've defined and told Circle about your callbacks, use this to
  * execute your program.
  */
-void Circle::execute() {
-  impl->execute();
-}
+void Circle::execute() { impl->execute(); }
 
 /**
  * Call this function to have all ranks dump a checkpoint file and exit.
@@ -168,13 +162,9 @@ void Circle::abort(void) {
 #endif
 }
 
-enum LogLevel Circle::getLogLevel() const {
-  return impl->logLevel;
-}
+enum LogLevel Circle::getLogLevel() const { return impl->logLevel; }
 
-FILE* Circle::getLogStream() const {
-  return impl->logStream;
-}
+FILE *Circle::getLogStream() const { return impl->logStream; }
 
 /**
  * Set the logging level that libcircle should use.
@@ -195,31 +185,31 @@ double wtime(void) { return MPI_Wtime(); }
 /**
  * Initialize a Circle instance for parallel processing.
  */
-Circle::Circle(circle::CallbackFunc createCallback, circle::CallbackFunc processCallback,
-  RuntimeFlags runtimeFlags) {
+Circle::Circle(circle::CallbackFunc createCallback,
+               circle::CallbackFunc processCallback,
+               RuntimeFlags runtimeFlags) {
   impl = new CircleImpl(this, createCallback, processCallback, runtimeFlags);
 }
 
 /**
  * Initialize a Circle instance for parallel processing and reduction.
  */
-Circle::Circle(circle::CallbackFunc createCallback, circle::CallbackFunc processCallback,
-  circle::reduceInitCallbackFunc reduceInitCallback, circle::reduceOperationCallbackFunc reduceOperationCallback,
-  circle::reduceFinalizeCallbackFunc reduceFinalizeCallback,
-  circle::RuntimeFlags runtimeFlags) {
+Circle::Circle(circle::CallbackFunc createCallback,
+               circle::CallbackFunc processCallback,
+               circle::reduceInitCallbackFunc reduceInitCallback,
+               circle::reduceOperationCallbackFunc reduceOperationCallback,
+               circle::reduceFinalizeCallbackFunc reduceFinalizeCallback,
+               circle::RuntimeFlags runtimeFlags) {
   impl = new CircleImpl(this, createCallback, processCallback,
-    reduceInitCallback, reduceOperationCallback, reduceFinalizeCallback, runtimeFlags);
+                        reduceInitCallback, reduceOperationCallback,
+                        reduceFinalizeCallback, runtimeFlags);
 }
 
-Circle::~Circle() {
-  delete impl;
-}
+Circle::~Circle() { delete impl; }
 
 int Circle::getRank() const { return impl->rank; }
 
-enum RuntimeFlags Circle::getRuntimeFlags() const {
-  return impl->runtimeFlags;
-}
+enum RuntimeFlags Circle::getRuntimeFlags() const { return impl->runtimeFlags; }
 
 /**
  * Change run time flags
@@ -237,8 +227,7 @@ int Circle::enqueue(const std::vector<uint8_t> &element) {
   return impl->queue->push(element);
 }
 
-int Circle::enqueue(const std::string &element)
-{
+int Circle::enqueue(const std::string &element) {
   std::vector<uint8_t> content(element.begin(), element.end());
   return enqueue(content);
 }
@@ -246,13 +235,11 @@ int Circle::enqueue(const std::string &element)
 /**
  * Wrapper for popping an element
  */
-int Circle::dequeue(std::vector<uint8_t> &element)
-{
+int Circle::dequeue(std::vector<uint8_t> &element) {
   return impl->queue->pop(element);
 }
 
-int Circle::dequeue(std::string &element)
-{
+int Circle::dequeue(std::string &element) {
   std::vector<uint8_t> content;
   int result = dequeue(content);
   element.resize(content.size());
@@ -263,9 +250,7 @@ int Circle::dequeue(std::string &element)
 /**
  * Wrapper for getting the local queue size
  */
-uint32_t Circle::localQueueSize() {
-  return (uint32_t)impl->queue->count;
-}
+uint32_t Circle::localQueueSize() { return (uint32_t)impl->queue->count; }
 
 int Circle::getTreeWidth() const { return impl->tree_width; }
 
@@ -349,46 +334,17 @@ static void MPI_error_handler(MPI_Comm *comm, int *err, ...) {
 /**
  * Initialize a Circle instance for parallel processing.
  */
-CircleImpl::CircleImpl(Circle* parent_, circle::CallbackFunc createCallback_, circle::CallbackFunc processCallback_,
-  RuntimeFlags runtimeFlags_) :
-  createCallback(createCallback_), processCallback(processCallback_),
-  reduceInitCallback(nullptr), reduceOperationCallback(nullptr), reduceFinalizeCallback(nullptr),
-  /* initialize reduction period to 0 seconds
-   * to disable reductions by default */
-  reduce_period(0), runtimeFlags(runtimeFlags_),
-  logStream(stdout), reduce_buf(nullptr),
-  logLevel(LogLevel::Fatal),
-  rank(-1), parent(parent_) {
-  queue = new Queue(parent);
-
-  /* initialize width of communication tree */
-  tree_width = 64;
-
-  MPI_Comm_dup(MPI_COMM_WORLD, &comm);
-  MPI_Comm_set_name(comm, WORK_COMM_NAME);
-  MPI_Comm_rank(comm, &rank);
-
-  /* setup an MPI error handler */
-  MPI_Comm_create_errhandler(MPI_error_handler, &circle_err);
-  MPI_Comm_set_errhandler(comm, circle_err);  
-}
-
-/**
- * Initialize a Circle instance for parallel processing and reduction.
- */
-CircleImpl::CircleImpl(Circle* parent_, circle::CallbackFunc createCallback_, circle::CallbackFunc processCallback_,
-  circle::reduceInitCallbackFunc reduceInitCallback_, circle::reduceOperationCallbackFunc reduceOperationCallback_,
-  circle::reduceFinalizeCallbackFunc reduceFinalizeCallback_,
-  circle::RuntimeFlags runtimeFlags_) :
-  createCallback(createCallback_), processCallback(processCallback_),
-  reduceInitCallback(reduceInitCallback_), reduceOperationCallback(reduceOperationCallback_),
-  reduceFinalizeCallback(reduceFinalizeCallback_),
-  /* initialize reduction period to 0 seconds
-   * to disable reductions by default */
-  reduce_period(0), runtimeFlags(runtimeFlags_),
-  logStream(stdout), reduce_buf(nullptr),
-  logLevel(LogLevel::Fatal),
-  rank(-1), parent(parent_) {
+CircleImpl::CircleImpl(Circle *parent_, circle::CallbackFunc createCallback_,
+                       circle::CallbackFunc processCallback_,
+                       RuntimeFlags runtimeFlags_)
+    : createCallback(createCallback_), processCallback(processCallback_),
+      reduceInitCallback(nullptr), reduceOperationCallback(nullptr),
+      reduceFinalizeCallback(nullptr),
+      /* initialize reduction period to 0 seconds
+       * to disable reductions by default */
+      reduce_period(0), runtimeFlags(runtimeFlags_), logStream(stdout),
+      reduce_buf(nullptr), logLevel(LogLevel::Fatal), rank(-1),
+      parent(parent_) {
   queue = new Queue(parent);
 
   /* initialize width of communication tree */
@@ -403,8 +359,40 @@ CircleImpl::CircleImpl(Circle* parent_, circle::CallbackFunc createCallback_, ci
   MPI_Comm_set_errhandler(comm, circle_err);
 }
 
-CircleImpl::~CircleImpl()
-{
+/**
+ * Initialize a Circle instance for parallel processing and reduction.
+ */
+CircleImpl::CircleImpl(
+    Circle *parent_, circle::CallbackFunc createCallback_,
+    circle::CallbackFunc processCallback_,
+    circle::reduceInitCallbackFunc reduceInitCallback_,
+    circle::reduceOperationCallbackFunc reduceOperationCallback_,
+    circle::reduceFinalizeCallbackFunc reduceFinalizeCallback_,
+    circle::RuntimeFlags runtimeFlags_)
+    : createCallback(createCallback_), processCallback(processCallback_),
+      reduceInitCallback(reduceInitCallback_),
+      reduceOperationCallback(reduceOperationCallback_),
+      reduceFinalizeCallback(reduceFinalizeCallback_),
+      /* initialize reduction period to 0 seconds
+       * to disable reductions by default */
+      reduce_period(0), runtimeFlags(runtimeFlags_), logStream(stdout),
+      reduce_buf(nullptr), logLevel(LogLevel::Fatal), rank(-1),
+      parent(parent_) {
+  queue = new Queue(parent);
+
+  /* initialize width of communication tree */
+  tree_width = 64;
+
+  MPI_Comm_dup(MPI_COMM_WORLD, &comm);
+  MPI_Comm_set_name(comm, WORK_COMM_NAME);
+  MPI_Comm_rank(comm, &rank);
+
+  /* setup an MPI error handler */
+  MPI_Comm_create_errhandler(MPI_error_handler, &circle_err);
+  MPI_Comm_set_errhandler(comm, circle_err);
+}
+
+CircleImpl::~CircleImpl() {
   delete queue;
 
   /* free buffer holding user reduction data */
@@ -421,29 +409,21 @@ CircleImpl::~CircleImpl()
 /**
  * Call this function to read in libcircle restart files.
  */
-int8_t Circle::readRestarts() {
-  return impl->readRestarts();
-}
+int8_t Circle::readRestarts() { return impl->readRestarts(); }
 
 /**
  * Call this function to read in libcircle restart files.  Each rank
  * writes a file called circle<rank>.txt
  */
-int8_t Circle::checkpoint() {
-  return impl->checkpoint();
-}
+int8_t Circle::checkpoint() { return impl->checkpoint(); }
 
 /**
  * Call this function to read in libcircle restart files.
  */
-int8_t CircleImpl::readRestarts() {
-  return queue->read(parent->getRank());
-}
+int8_t CircleImpl::readRestarts() { return queue->read(parent->getRank()); }
 
 /**
  * Call this function to read in libcircle restart files.  Each rank
  * writes a file called circle<rank>.txt
  */
-int8_t CircleImpl::checkpoint() {
-  return queue->write(parent->getRank());
-}
+int8_t CircleImpl::checkpoint() { return queue->write(parent->getRank()); }

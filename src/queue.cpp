@@ -11,8 +11,8 @@
 #include <string>
 #include <unistd.h>
 
-#include "lanl_circle.hpp"
 #include "circle.hpp"
+#include "lanl_circle.hpp"
 #include "log.hpp"
 #include "queue.hpp"
 
@@ -26,11 +26,9 @@ using namespace circle::internal;
  *
  * @see Queue::free
  */
-Queue::Queue(Circle* parent_) : parent(parent_), count(0), head(0) { }
+Queue::Queue(Circle *parent_) : parent(parent_), count(0), head(0) {}
 
-int Queue::getCount() const {
-  return count;
-}
+int Queue::getCount() const { return count; }
 
 /**
  * Dump the raw contents of the queue structure to logging.
@@ -80,8 +78,7 @@ int8_t Queue::extendStr(size_t amount) {
   LOG(LogLevel::Debug,
       "Reallocing string array from"
       " [%zu] to [%zu] [%p] -> [%p].",
-      (size_t)oldSize, (size_t)newSize,
-      &strings[0], &strings[newSize]);
+      (size_t)oldSize, (size_t)newSize, &strings[0], &strings[newSize]);
 
   return 0;
 }
@@ -103,8 +100,7 @@ int8_t Queue::extend(size_t amount) {
   LOG(LogLevel::Debug,
       "Reallocing queue from"
       " [%zu] to [%zu] [%p] -> [%p].",
-      (size_t)oldSize, (size_t)newSize,
-      &base[0], &base[newSize]);
+      (size_t)oldSize, (size_t)newSize, &base[0], &base[newSize]);
 
   return 0;
 }
@@ -163,8 +159,7 @@ int8_t Queue::push(const std::vector<uint8_t> &content) {
   return 0;
 }
 
-int8_t Queue::push(const std::string &element)
-{ 
+int8_t Queue::push(const std::string &element) {
   std::vector<uint8_t> content(element.begin(), element.end());
   return push(content);
 }
@@ -194,8 +189,7 @@ int8_t Queue::pop(std::vector<uint8_t> &content) {
   return 0;
 }
 
-int8_t Queue::pop(std::string &element)
-{
+int8_t Queue::pop(std::string &element) {
   std::vector<uint8_t> content;
   int result = pop(content);
   element.resize(content.size());
@@ -234,8 +228,7 @@ int8_t Queue::read(int rank) {
   LOG(LogLevel::Debug, "Checkpoint file opened.");
 
   std::string str;
-  while (std::getline(checkpoint_file, str))
-  {
+  while (std::getline(checkpoint_file, str)) {
     std::vector<uint8_t> content(str.begin(), str.end());
     if (push(content) < 0) {
       LOG(LogLevel::Error, "Failed to push element on queue \"%s\"", str);

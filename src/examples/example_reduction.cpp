@@ -17,7 +17,7 @@ static size_t sztotal_partial = 0;
  * its contents can be safely changed or go out of scope after the call
  * to circle::reduce returns.
  */
-static void my_reduce_init(circle::Circle* circle) {
+static void my_reduce_init(circle::Circle *circle) {
   /*
    * We give the starting memory address and size of a memory
    * block that we want libcircle to capture on this process when
@@ -45,8 +45,8 @@ static void my_reduce_init(circle::Circle* circle) {
  * input buffer.  For example, one could concatentate buffers so that
  * the reduction actually performs a gather operation.
  */
-static void my_reduce_op(circle::Circle* circle, const void *buf1, size_t size1, const void *buf2,
-                      size_t size2) {
+static void my_reduce_op(circle::Circle *circle, const void *buf1, size_t size1,
+                         const void *buf2, size_t size2) {
   /*
    * Here we are given the starting address and size of two input
    * buffers.  These could be the initial memory blocks copied during
@@ -69,7 +69,8 @@ static void my_reduce_op(circle::Circle* circle, const void *buf1, size_t size1,
  * provides a buffer holding the final reduction result as in input
  * parameter. Typically, one might print the result in this callback.
  */
-static void my_reduce_fini(circle::Circle* circle, const void *buf, size_t size) {
+static void my_reduce_fini(circle::Circle *circle, const void *buf,
+                           size_t size) {
   /*
    * In this example, we get the reduced sum from the input buffer,
    * and we compute the average processing rate.  We then print
@@ -133,10 +134,9 @@ int main(int argc, char *argv[]) {
    * Do partial computations with libcircle.
    */
   circle::init(&argc, &argv);
-  circle::Circle example(
-    my_create_some_work, my_process_some_work,
-    my_reduce_init, my_reduce_op, my_reduce_fini,
-    circle::RuntimeFlags::DefaultFlags);
+  circle::Circle example(my_create_some_work, my_process_some_work,
+                         my_reduce_init, my_reduce_op, my_reduce_fini,
+                         circle::RuntimeFlags::DefaultFlags);
   example.setLogLevel(circle::LogLevel::Info);
 
   /*
@@ -149,4 +149,3 @@ int main(int argc, char *argv[]) {
 
   return 0;
 }
-

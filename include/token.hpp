@@ -43,33 +43,33 @@ typedef struct options {
 
 /* records info about the tree of spawn processes */
 class TreeState {
-  int rank;         /* our global rank (0 to ranks-1) */
-  int nranks;        /* number of nodes in tree */
-  int parentRank;  /* rank of parent */
-  int nchildren;     /* number of children we have */
+  int rank;           /* our global rank (0 to ranks-1) */
+  int nranks;         /* number of nodes in tree */
+  int parentRank;     /* rank of parent */
+  int nchildren;      /* number of children we have */
   int *childrenRanks; /* global ranks of our children */
-  int maxChildren; /* the maximum number of children this task may have */
+  int maxChildren;    /* the maximum number of children this task may have */
 
-  Circle* parent;
+  Circle *parent;
 
-public :
-
-  TreeState(Circle* parent, const MPI_Comm& comm, int rank, int nranks, int maxChildren);
+public:
+  TreeState(Circle *parent, const MPI_Comm &comm, int rank, int nranks,
+            int maxChildren);
 
   ~TreeState();
 
-  template<typename ... Args>
-  void log(LogLevel logLevel_, const char* filename, int lineno, Args&& ... args)
-  {
+  template <typename... Args>
+  void log(LogLevel logLevel_, const char *filename, int lineno,
+           Args &&... args) {
     if (parent)
-      parent->log(logLevel_, filename, lineno, std::forward<Args>(args) ...);
+      parent->log(logLevel_, filename, lineno, std::forward<Args>(args)...);
   }
 
   int getChildrenCount() const;
 
   int getParentRank() const;
 
-  const int* getChildrenRanks() const;
+  const int *getChildrenRanks() const;
 };
 
 class State {
@@ -80,11 +80,11 @@ class State {
   circle::reduceFinalizeCallbackFunc reduceFinalizeCallback;
 
   /* communicator and our rank and its size */
-  const MPI_Comm& comm;
+  const MPI_Comm &comm;
   int rank;
   int size;
 
-  Queue* queue;
+  Queue *queue;
 
   void *&reduce_buf;
   size_t &reduce_buf_size;
@@ -118,7 +118,7 @@ class State {
   int work_requested_rank; /* rank of process we requested work from */
 
   /* tree used for collective operations */
-  TreeState* tree; /* parent and children of tree */
+  TreeState *tree; /* parent and children of tree */
 
   /* manage state for reduction operations */
   int reduce_enabled;      /* flag indicating whether reductions are enabled */
@@ -158,21 +158,23 @@ class State {
   uint32_t
       local_no_work_received; /* number of times a process asked us for work */
 
-  Circle* parent;
+  Circle *parent;
 
-public :
-
-  State(Circle* parent, circle::CallbackFunc processCallback, circle::reduceInitCallbackFunc reduceInitCallback,
-    circle::reduceOperationCallbackFunc reduceOperationCallback, circle::reduceFinalizeCallbackFunc reduceFinalizeCallback,
-    const MPI_Comm& comm, Queue* queue, void *&reduce_buf, size_t &reduce_buf_size);
+public:
+  State(Circle *parent, circle::CallbackFunc processCallback,
+        circle::reduceInitCallbackFunc reduceInitCallback,
+        circle::reduceOperationCallbackFunc reduceOperationCallback,
+        circle::reduceFinalizeCallbackFunc reduceFinalizeCallback,
+        const MPI_Comm &comm, Queue *queue, void *&reduce_buf,
+        size_t &reduce_buf_size);
 
   ~State();
 
-  template<typename ... Args>
-  void log(LogLevel logLevel_, const char* filename, int lineno, Args&& ... args)
-  {
+  template <typename... Args>
+  void log(LogLevel logLevel_, const char *filename, int lineno,
+           Args &&... args) {
     if (parent)
-      parent->log(logLevel_, filename, lineno, std::forward<Args>(args) ...);
+      parent->log(logLevel_, filename, lineno, std::forward<Args>(args)...);
   }
 
   /* initiate and execute reduction in background */
@@ -233,9 +235,10 @@ public :
    *
    * When the master rank is idle, it generates a token that is initially white.
    * When a node is idle, and can't get work for one loop iteration, then it
-   * checks for termination. It checks to see if the token has been passed to it,
-   * additionally checking for the termination token. If a rank receives a black
-   * token then it forwards a black token. Otherwise it forwards its own color.
+   * checks for termination. It checks to see if the token has been passed to
+   * it, additionally checking for the termination token. If a rank receives a
+   * black token then it forwards a black token. Otherwise it forwards its own
+   * color.
    *
    * All nodes start out in the white state. State is *not* the same thing as
    * the token. If a node j sends work to a rank i (i < j) then its state turns
@@ -297,4 +300,3 @@ template <typename T> void free(T **pptr) {
 } // namespace circle
 
 #endif /* TOKEN_H */
-

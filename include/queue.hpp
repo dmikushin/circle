@@ -17,22 +17,21 @@ namespace internal {
 class CircleImpl;
 
 struct Queue {
-  std::vector<char> base;        /* Base of the memory pool */
-  uintptr_t head;                /* The location of the next free byte */
-  std::vector<uintptr_t>strings; /* The string data */
-  int count;                 /* The number of actively queued strings */
+  std::vector<char> base;         /* Base of the memory pool */
+  uintptr_t head;                 /* The location of the next free byte */
+  std::vector<uintptr_t> strings; /* The string data */
+  int count;                      /* The number of actively queued strings */
 
-  Circle* parent;
+  Circle *parent;
 
-public :
+public:
+  Queue(Circle *parent);
 
-  Queue(Circle* parent);
-
-  template<typename ... Args>
-  void log(LogLevel logLevel_, const char* filename, int lineno, Args&& ... args)
-  {
+  template <typename... Args>
+  void log(LogLevel logLevel_, const char *filename, int lineno,
+           Args &&... args) {
     if (parent)
-      parent->log(logLevel_, filename, lineno, std::forward<Args>(args) ...);
+      parent->log(logLevel_, filename, lineno, std::forward<Args>(args)...);
   }
 
   int getCount() const;

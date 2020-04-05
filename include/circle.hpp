@@ -11,7 +11,7 @@ namespace circle {
 namespace internal {
 
 class CircleImpl {
-  Circle* parent;
+  Circle *parent;
 
   circle::CallbackFunc createCallback;
   circle::CallbackFunc processCallback;
@@ -36,32 +36,34 @@ class CircleImpl {
   int tree_width;
 
   int rank;
- 
-  Queue* queue;
 
-public :
+  Queue *queue;
 
+public:
   /**
    * Initialize a Circle instance for parallel processing.
    */
-  CircleImpl(Circle* parent, circle::CallbackFunc createCallback, circle::CallbackFunc processCallback,
+  CircleImpl(Circle *parent, circle::CallbackFunc createCallback,
+             circle::CallbackFunc processCallback,
              circle::RuntimeFlags runtimeFlags);
 
   /**
    * Initialize a Circle instance for parallel processing and reduction.
    */
-  CircleImpl(Circle* parent, circle::CallbackFunc createCallback, circle::CallbackFunc processCallback,
-             circle::reduceInitCallbackFunc reduceInitCallback, circle::reduceOperationCallbackFunc reduceOperationCallback,
+  CircleImpl(Circle *parent, circle::CallbackFunc createCallback,
+             circle::CallbackFunc processCallback,
+             circle::reduceInitCallbackFunc reduceInitCallback,
+             circle::reduceOperationCallbackFunc reduceOperationCallback,
              circle::reduceFinalizeCallbackFunc reduceFinalizeCallback,
              circle::RuntimeFlags runtimeFlags);
 
   ~CircleImpl();
 
-  template<typename ... Args>
-  void log(LogLevel logLevel_, const char* filename, int lineno, Args&& ... args)
-  {
+  template <typename... Args>
+  void log(LogLevel logLevel_, const char *filename, int lineno,
+           Args &&... args) {
     if (parent)
-      parent->log(logLevel_, filename, lineno, std::forward<Args>(args) ...);
+      parent->log(logLevel_, filename, lineno, std::forward<Args>(args)...);
   }
 
   /**
@@ -88,4 +90,3 @@ public :
 } // namespace circle
 
 #endif /* CIRCLE_IMPL_H */
-
