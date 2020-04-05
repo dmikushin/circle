@@ -14,7 +14,9 @@ using namespace circle::internal;
 /**
  * Initializes all variables local to a rank
  */
-State::State(Circle *parent_) : parent(parent_), comm(parent_->impl->comm), ABORT_FLAG(0) {
+State::State(Circle *parent_, void *&reduce_buf_, size_t &reduce_buf_size_) :
+  parent(parent_), comm(parent_->impl->comm), ABORT_FLAG(0),
+  reduce_buf(reduce_buf_), reduce_buf_size(reduce_buf_size_) {
 
   /* get our rank and number of ranks in communicator */
   MPI_Comm_rank(comm, &rank);
@@ -167,14 +169,14 @@ void State::reduceCheck(int count, int cleanup) {
         if (recvbuf[0] == MSG_INVALID) {
           /* child's data is invalid,
            * set our result to invalid */
-          reduce_buf[0] = MSG_INVALID;
+          local_reduce_buf[0] = MSG_INVALID;
           continue;
         }
 
         /* otherwise, we got a real message, combine child's
          * data with our buffer (this step won't hurt even
          * if our buffer has invalid data) */
-        reduce_buf[1] += recvbuf[1];
+        local_reduce_buf[1] += recvbuf[1];
 
         /* get incoming user data if we have any */
         void *inbuf = NULL;
@@ -195,10 +197,10 @@ void State::reduceCheck(int count, int cleanup) {
 
         /* if we have valid data, invoke user's callback to
          * reduce user data */
-        if (reduce_buf[0] == MSG_VALID) {
+        if (local_reduce_buf[0] == MSG_VALID) {
           if (parent->reduce_op_cb != NULL) {
-            void *currbuf = parent->impl->reduce_buf;
-            size_t currsize = parent->impl->reduce_buf_size;
+            void *currbuf = reduce_buf;
+            size_t currsize = reduce_buf_size;
             (*(parent->reduce_op_cb))(parent, currbuf, currsize, inbuf, insize);
           }
         }
@@ -211,33 +213,33 @@ void State::reduceCheck(int count, int cleanup) {
     /* check whether we've gotten replies from all children */
     if (reduce_replies == nchildren) {
       /* all children have replied, add our own content to reduce buffer */
-      reduce_buf[1] += (long long int)count;
+      local_reduce_buf[1] += (long long int)count;
 
       /* send message to parent if we have one */
       if (parentRank != MPI_PROC_NULL) {
         /* get size of user data */
-        int bytes = (int)parent->impl->reduce_buf_size;
-        reduce_buf[2] = (long long int)bytes;
+        int bytes = (int)reduce_buf_size;
+        local_reduce_buf[2] = (long long int)bytes;
 
         /* send partial result to parent */
-        MPI_Send(reduce_buf, 3, MPI_LONG_LONG, parentRank, CIRCLE_TAG_REDUCE,
+        MPI_Send(local_reduce_buf, 3, MPI_LONG_LONG, parentRank, CIRCLE_TAG_REDUCE,
                  comm);
 
         /* also send along user data if any, and if it is valid */
-        if (bytes > 0 && reduce_buf[0] == MSG_VALID) {
-          void *currbuf = parent->impl->reduce_buf;
+        if (bytes > 0 && local_reduce_buf[0] == MSG_VALID) {
+          void *currbuf = reduce_buf;
           MPI_Send(currbuf, bytes, MPI_BYTE, parentRank, CIRCLE_TAG_REDUCE,
                    comm);
         }
       } else {
         /* we're the root, print the results if we have valid data */
-        if (reduce_buf[0] == MSG_VALID) {
-          LOG(LogLevel::Info, "Objects processed: %lld ...", reduce_buf[1]);
+        if (local_reduce_buf[0] == MSG_VALID) {
+          LOG(LogLevel::Info, "Objects processed: %lld ...", local_reduce_buf[1]);
 
           /* invoke callback on root to deliver final result */
           if (parent->reduce_fini_cb != NULL) {
-            void *resultbuf = parent->impl->reduce_buf;
-            size_t resultsize = parent->impl->reduce_buf_size;
+            void *resultbuf = reduce_buf;
+            size_t resultsize = reduce_buf_size;
             (*(parent->reduce_fini_cb))(parent, resultbuf, resultsize);
           }
         }
@@ -283,8 +285,8 @@ void State::reduceCheck(int count, int cleanup) {
       /* set message to invalid data, and send it back to parent
        * if we have one */
       if (parentRank != MPI_PROC_NULL) {
-        reduce_buf[0] = MSG_INVALID;
-        MPI_Send(reduce_buf, 3, MPI_LONG_LONG, parentRank, CIRCLE_TAG_REDUCE,
+        local_reduce_buf[0] = MSG_INVALID;
+        MPI_Send(local_reduce_buf, 3, MPI_LONG_LONG, parentRank, CIRCLE_TAG_REDUCE,
                  comm);
       }
     }
@@ -296,9 +298,9 @@ void State::reduceCheck(int count, int cleanup) {
       reduce_time_last = time_now;
       reduce_outstanding = 1;
       reduce_replies = 0;
-      reduce_buf[0] = MSG_VALID;
-      reduce_buf[1] = 0; /* set total to 0 */
-      reduce_buf[2] = 0; /* initialize byte count */
+      local_reduce_buf[0] = MSG_VALID;
+      local_reduce_buf[1] = 0; /* set total to 0 */
+      local_reduce_buf[2] = 0; /* initialize byte count */
 
       /* invoke callback to get input data,
        * it will be stored in circle after user
@@ -327,9 +329,9 @@ void State::reduceSync(int count) {
   const int *childrenRanks = tree->getChildrenRanks();
 
   /* initialize state for a fresh reduction */
-  reduce_buf[0] = MSG_VALID;
-  reduce_buf[1] = (long long int)count;
-  reduce_buf[2] = 0; /* initialize byte count */
+  local_reduce_buf[0] = MSG_VALID;
+  local_reduce_buf[1] = (long long int)count;
+  local_reduce_buf[2] = 0; /* initialize byte count */
 
   /* invoke callback to get input data,
    * it will be stored in circle after user
@@ -352,7 +354,7 @@ void State::reduceSync(int count) {
              &status);
 
     /* combine child's count with ours */
-    reduce_buf[1] += recvbuf[1];
+    local_reduce_buf[1] += recvbuf[1];
 
     /* get incoming user data if we have any */
     void *inbuf = NULL;
@@ -372,8 +374,8 @@ void State::reduceSync(int count) {
 
     /* invoke user's callback to reduce user data */
     if (parent->reduce_op_cb != NULL) {
-      void *currbuf = parent->impl->reduce_buf;
-      size_t currsize = parent->impl->reduce_buf_size;
+      void *currbuf = reduce_buf;
+      size_t currsize = reduce_buf_size;
       (*(parent->reduce_op_cb))(parent, currbuf, currsize, inbuf, insize);
     }
 
@@ -384,25 +386,25 @@ void State::reduceSync(int count) {
   /* send message to parent if we have one */
   if (parentRank != MPI_PROC_NULL) {
     /* get size of user data */
-    int bytes = (int)parent->impl->reduce_buf_size;
-    reduce_buf[2] = (long long int)bytes;
+    int bytes = (int)reduce_buf_size;
+    local_reduce_buf[2] = (long long int)bytes;
 
     /* send partial result to parent */
-    MPI_Send(reduce_buf, 3, MPI_LONG_LONG, parentRank, CIRCLE_TAG_REDUCE, comm);
+    MPI_Send(local_reduce_buf, 3, MPI_LONG_LONG, parentRank, CIRCLE_TAG_REDUCE, comm);
 
     /* also send along user data if any */
     if (bytes > 0) {
-      void *currbuf = parent->impl->reduce_buf;
+      void *currbuf = reduce_buf;
       MPI_Send(currbuf, bytes, MPI_BYTE, parentRank, CIRCLE_TAG_REDUCE, comm);
     }
   } else {
     /* we're the root, print the results if we have valid data */
-    LOG(LogLevel::Info, "Objects processed: %lld (done)", reduce_buf[1]);
+    LOG(LogLevel::Info, "Objects processed: %lld (done)", local_reduce_buf[1]);
 
     /* invoke callback on root to deliver final result */
     if (parent->reduce_fini_cb != NULL) {
-      void *resultbuf = parent->impl->reduce_buf;
-      size_t resultsize = parent->impl->reduce_buf_size;
+      void *resultbuf = reduce_buf;
+      size_t resultsize = reduce_buf_size;
       (*(parent->reduce_fini_cb))(parent, resultbuf, resultsize);
     }
   }

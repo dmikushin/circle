@@ -94,7 +94,7 @@ int circle::init(int* argc, char **argv[]) {
  */
 void CircleImpl::execute() {
   /* initialize all local state variables */
-  State state(parent);
+  State state(parent, reduce_buf, reduce_buf_size);
 
   /* print settings of some runtime tunables */
   if ((runtimeFlags & RuntimeFlags::SplitEqual) !=

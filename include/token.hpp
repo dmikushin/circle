@@ -79,6 +79,9 @@ class State {
   int rank;
   int size;
 
+  void *&reduce_buf;
+  size_t &reduce_buf_size;
+
   int8_t ABORT_FLAG;
 
   /* tracks state of token */
@@ -116,7 +119,7 @@ class State {
   double reduce_time_interval; /* seconds between reductions */
   int reduce_outstanding; /* flag indicating whether a reduce is outstanding */
   int reduce_replies; /* keeps count of number of children who have replied */
-  long long int reduce_buf[3]; /* local reduction buffer */
+  long long int local_reduce_buf[3]; /* local reduction buffer */
 
   /* manage state for barrier operations */
   int barrier_started; /* flag indicating whether local process has initiated
@@ -152,7 +155,7 @@ class State {
 
 public :
 
-  State(Circle* parent);
+  State(Circle* parent, void *&reduce_buf, size_t &reduce_buf_size);
 
   ~State();
 

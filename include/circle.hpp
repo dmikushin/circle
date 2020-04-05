@@ -11,7 +11,6 @@ namespace circle {
 namespace internal {
 
 class CircleImpl {
-
 public : // TODO
   Circle* parent;
 
