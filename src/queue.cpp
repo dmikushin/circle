@@ -127,12 +127,6 @@ int8_t Queue::push(const std::vector<uint8_t> &content) {
     return -1;
   }
 
-  if (len > CIRCLE_MAX_STRING_LEN) {
-    LOG(LogLevel::Error,
-        "Attempted to push a value that was larger than expected.");
-    return -1;
-  }
-
   if (count + 1 > strings.size()) {
     LOG(LogLevel::Debug, "Extending string array by 4096.");
 

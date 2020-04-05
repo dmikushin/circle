@@ -13,6 +13,13 @@ namespace internal {
 class CircleImpl {
   Circle* parent;
 
+  circle::cb createCallback;
+  circle::cb processCallback;
+
+  circle::cb_reduce_init_fn reduceInitCallback;
+  circle::cb_reduce_op_fn reduceOperationCallback;
+  circle::cb_reduce_fini_fn reduceFinalizeCallback;
+
   MPI_Comm comm;
   MPI_Errhandler circle_err;
 
@@ -34,7 +41,19 @@ class CircleImpl {
 
 public :
 
-  CircleImpl(Circle* parent, RuntimeFlags runtimeFlags);
+  /**
+   * Initialize a Circle instance for parallel processing.
+   */
+  CircleImpl(Circle* parent, circle::cb createCallback, circle::cb processCallback,
+             circle::RuntimeFlags runtimeFlags);
+
+  /**
+   * Initialize a Circle instance for parallel processing and reduction.
+   */
+  CircleImpl(Circle* parent, circle::cb createCallback, circle::cb processCallback,
+             circle::cb_reduce_init_fn reduceInitCallback, circle::cb_reduce_op_fn reduceOperationCallback,
+             circle::cb_reduce_fini_fn reduceFinalizeCallback,
+             circle::RuntimeFlags runtimeFlags);
 
   ~CircleImpl();
 

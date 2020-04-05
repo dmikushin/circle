@@ -14,7 +14,12 @@ using namespace circle::internal;
 /**
  * Initializes all variables local to a rank
  */
-State::State(Circle *parent_, const MPI_Comm& comm_, Queue* queue_, void *&reduce_buf_, size_t &reduce_buf_size_) :
+State::State(Circle *parent_, circle::cb processCallback_,
+  circle::cb_reduce_init_fn reduceInitCallback_, circle::cb_reduce_op_fn reduceOperationCallback_,
+  circle::cb_reduce_fini_fn reduceFinalizeCallback_,
+  const MPI_Comm& comm_, Queue* queue_, void *&reduce_buf_, size_t &reduce_buf_size_) :
+  processCallback(processCallback_), reduceInitCallback(reduceInitCallback_),
+  reduceOperationCallback(reduceOperationCallback_), reduceFinalizeCallback(reduceFinalizeCallback_),
   parent(parent_), comm(comm_), queue(queue_), ABORT_FLAG(0),
   reduce_buf(reduce_buf_), reduce_buf_size(reduce_buf_size_) {
 
@@ -198,10 +203,10 @@ void State::reduceCheck(int count, int cleanup) {
         /* if we have valid data, invoke user's callback to
          * reduce user data */
         if (local_reduce_buf[0] == MSG_VALID) {
-          if (parent->reduce_op_cb != NULL) {
+          if (reduceOperationCallback != NULL) {
             void *currbuf = reduce_buf;
             size_t currsize = reduce_buf_size;
-            (*(parent->reduce_op_cb))(parent, currbuf, currsize, inbuf, insize);
+            (*(reduceOperationCallback))(parent, currbuf, currsize, inbuf, insize);
           }
         }
 
@@ -237,10 +242,10 @@ void State::reduceCheck(int count, int cleanup) {
           LOG(LogLevel::Info, "Objects processed: %lld ...", local_reduce_buf[1]);
 
           /* invoke callback on root to deliver final result */
-          if (parent->reduce_fini_cb != NULL) {
+          if (reduceFinalizeCallback != NULL) {
             void *resultbuf = reduce_buf;
             size_t resultsize = reduce_buf_size;
-            (*(parent->reduce_fini_cb))(parent, resultbuf, resultsize);
+            (*(reduceFinalizeCallback))(parent, resultbuf, resultsize);
           }
         }
       }
@@ -305,8 +310,8 @@ void State::reduceCheck(int count, int cleanup) {
       /* invoke callback to get input data,
        * it will be stored in circle after user
        * calls reduce which should be done in callback */
-      if (parent->reduce_init_cb != NULL) {
-        (*(parent->reduce_init_cb))(parent);
+      if (reduceInitCallback != NULL) {
+        (*(reduceInitCallback))(parent);
       }
 
       /* send message to each child */
@@ -336,8 +341,8 @@ void State::reduceSync(int count) {
   /* invoke callback to get input data,
    * it will be stored in circle after user
    * calls reduce which should be done in callback */
-  if (parent->reduce_init_cb != NULL) {
-    (*(parent->reduce_init_cb))(parent);
+  if (reduceInitCallback != NULL) {
+    (*(reduceInitCallback))(parent);
   }
 
   /* wait for messages from our children */
@@ -373,10 +378,10 @@ void State::reduceSync(int count) {
     }
 
     /* invoke user's callback to reduce user data */
-    if (parent->reduce_op_cb != NULL) {
+    if (reduceOperationCallback != NULL) {
       void *currbuf = reduce_buf;
       size_t currsize = reduce_buf_size;
-      (*(parent->reduce_op_cb))(parent, currbuf, currsize, inbuf, insize);
+      (*(reduceOperationCallback))(parent, currbuf, currsize, inbuf, insize);
     }
 
     /* free temporary buffer holding incoming user data */
@@ -402,10 +407,10 @@ void State::reduceSync(int count) {
     LOG(LogLevel::Info, "Objects processed: %lld (done)", local_reduce_buf[1]);
 
     /* invoke callback on root to deliver final result */
-    if (parent->reduce_fini_cb != NULL) {
+    if (reduceFinalizeCallback != NULL) {
       void *resultbuf = reduce_buf;
       size_t resultsize = reduce_buf_size;
-      (*(parent->reduce_fini_cb))(parent, resultbuf, resultsize);
+      (*(reduceFinalizeCallback))(parent, resultbuf, resultsize);
     }
   }
 }
@@ -1559,7 +1564,7 @@ void State::mainLoop() {
     /* If I have some work and have not received a signal to
      * abort, process one work item */
     if (queue->count > 0 && !ABORT_FLAG) {
-      (*(parent->process_cb))(parent);
+      (*(processCallback))(parent);
       local_objects_processed++;
     }
     /* If I don't have work, or if I received signal to abort,

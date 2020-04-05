@@ -6,16 +6,6 @@
 #include <string>
 #include <vector>
 
-/**
- * The maximum length of a string value which is allowed to be placed on the
- * queue structure.
- */
-#ifdef PATH_MAX
-#define CIRCLE_MAX_STRING_LEN PATH_MAX
-#else
-#define CIRCLE_MAX_STRING_LEN (4096)
-#endif
-
 namespace circle {
 
 /**
@@ -77,17 +67,6 @@ class CircleImpl;
 } // namespace internal
 
 class Circle {
-
-public :
-
-  // TODO std::function
-  circle::cb create_cb;
-  circle::cb process_cb;
-
-  circle::cb_reduce_init_fn reduce_init_cb;
-  circle::cb_reduce_op_fn reduce_op_cb;
-  circle::cb_reduce_fini_fn reduce_fini_cb;
-
   internal::CircleImpl* impl;
 
 public :
@@ -95,7 +74,8 @@ public :
   /**
    * Initialize a Circle instance for parallel processing.
    */
-  Circle(circle::cb createCallback, circle::cb processCallback, circle::RuntimeFlags runtimeFlags);
+  Circle(circle::cb createCallback, circle::cb processCallback,
+         circle::RuntimeFlags runtimeFlags);
 
   /**
    * Initialize a Circle instance for parallel processing and reduction.
@@ -204,6 +184,8 @@ public :
   int dequeue(std::string &element);
 
   uint32_t localQueueSize();
+
+  friend class circle::internal::CircleImpl;
 };
 
 /**
@@ -216,55 +198,6 @@ const char *backtrace(int skip);
  * any other Circle API call. This returns the MPI rank value.
  */
 int init(int *argc, char **argv[]);
-
-/**
- * Processing and creating work is done through callbacks. Here's how we tell
- * Circle about our function which creates work. This call is optional.
- */
-void cb_create(circle::cb func);
-
-/**
- * After you give Circle a way to create work, you need to tell it how that
- * work should be processed.
- */
-void cb_process(circle::cb func);
-
-/**
- * Specify function that Circle should call to get initial data for
- * a reduction.
- */
-void cb_reduce_init(circle::cb_reduce_init_fn);
-
-/**
- * Specify function that Circle should call to execute a reduction
- * operation.
- */
-void cb_reduce_op(circle::cb_reduce_op_fn);
-
-/**
- * Specify function that libcicle should invoke at end of reduction.
- * This function is only invoked on rank 0.
- */
-void cb_reduce_fini(circle::cb_reduce_fini_fn);
-
-/**
- * Provide Circle with initial reduction data during initial
- * and intermediate reduction callbacks, Circle makes a copy
- * of the data so the user buffer can be immediately released.
- */
-void reduce(const void *buf, size_t size);
-
-/**
- * Call this function to checkpoint Circle's distributed queue. Each rank
- * writes a file called circle<rank>.txt
- */
-int8_t checkpoint(void);
-
-/**
- * Call this function to initialize Circle queues from restart files
- * created by checkpoint.
- */
-int8_t read_restarts(void);
 
 /**
  * Returns an elapsed time on the calling processor for benchmarking purposes.

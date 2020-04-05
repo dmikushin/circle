@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "circle.hpp"
 #include "queue.hpp"
 
 #define CIRCLE_MPI_ERROR 32
@@ -42,7 +43,6 @@ typedef struct options {
 
 /* records info about the tree of spawn processes */
 class TreeState {
-
   int rank;         /* our global rank (0 to ranks-1) */
   int nranks;        /* number of nodes in tree */
   int parentRank;  /* rank of parent */
@@ -73,6 +73,11 @@ public :
 };
 
 class State {
+  circle::cb processCallback;
+
+  circle::cb_reduce_init_fn reduceInitCallback;
+  circle::cb_reduce_op_fn reduceOperationCallback;
+  circle::cb_reduce_fini_fn reduceFinalizeCallback;
 
   /* communicator and our rank and its size */
   const MPI_Comm& comm;
@@ -157,8 +162,9 @@ class State {
 
 public :
 
-  State(Circle* parent, const MPI_Comm& comm, Queue* queue,
-        void *&reduce_buf, size_t &reduce_buf_size);
+  State(Circle* parent, circle::cb processCallback, circle::cb_reduce_init_fn reduceInitCallback,
+    circle::cb_reduce_op_fn reduceOperationCallback, circle::cb_reduce_fini_fn reduceFinalizeCallback,
+    const MPI_Comm& comm, Queue* queue, void *&reduce_buf, size_t &reduce_buf_size);
 
   ~State();
 

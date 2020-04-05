@@ -94,7 +94,9 @@ int circle::init(int* argc, char **argv[]) {
  */
 void CircleImpl::execute() {
   /* initialize all local state variables */
-  State state(parent, comm, queue, reduce_buf, reduce_buf_size);
+  State state(parent, processCallback, reduceInitCallback,
+    reduceOperationCallback, reduceFinalizeCallback,
+    comm, queue, reduce_buf, reduce_buf_size);
 
   /* print settings of some runtime tunables */
   if ((runtimeFlags & RuntimeFlags::SplitEqual) !=
@@ -132,7 +134,7 @@ void CircleImpl::execute() {
    * only invoke on master unless CREATE_GLOBAL is set */
   if (rank == 0 || (runtimeFlags & RuntimeFlags::CreateGlobal) !=
                        RuntimeFlags::None) {
-    (*(parent->create_cb))(parent);
+    (*(parent->impl->createCallback))(parent);
   }
 
   /* work until we get a terminate message */
@@ -193,26 +195,20 @@ double wtime(void) { return MPI_Wtime(); }
 /**
  * Initialize a Circle instance for parallel processing.
  */
-Circle::Circle(cb createCallback_, cb processCallback_,
-  RuntimeFlags runtimeFlags_) :
-  create_cb(createCallback_), process_cb(processCallback_),
-  reduce_init_cb(nullptr), reduce_op_cb(nullptr), reduce_fini_cb(nullptr) {
-
-  impl = new CircleImpl(this, runtimeFlags_);
+Circle::Circle(cb createCallback, cb processCallback,
+  RuntimeFlags runtimeFlags) {
+  impl = new CircleImpl(this, createCallback, processCallback, runtimeFlags);
 }
 
 /**
  * Initialize a Circle instance for parallel processing and reduction.
  */
-Circle::Circle(circle::cb createCallback_, circle::cb processCallback_,
-  circle::cb_reduce_init_fn reduceInitCallback_, circle::cb_reduce_op_fn reduceOperationCallback_,
-  circle::cb_reduce_fini_fn reduceFinalizeCallback_,
-  circle::RuntimeFlags runtimeFlags_) :
-  create_cb(createCallback_), process_cb(processCallback_),
-  reduce_init_cb(reduceInitCallback_), reduce_op_cb(reduceOperationCallback_),
-  reduce_fini_cb(reduceFinalizeCallback_) {
-
-  impl = new CircleImpl(this, runtimeFlags_);
+Circle::Circle(circle::cb createCallback, circle::cb processCallback,
+  circle::cb_reduce_init_fn reduceInitCallback, circle::cb_reduce_op_fn reduceOperationCallback,
+  circle::cb_reduce_fini_fn reduceFinalizeCallback,
+  circle::RuntimeFlags runtimeFlags) {
+  impl = new CircleImpl(this, createCallback, processCallback,
+    reduceInitCallback, reduceOperationCallback, reduceFinalizeCallback, runtimeFlags);
 }
 
 Circle::~Circle() {
@@ -350,7 +346,13 @@ static void MPI_error_handler(MPI_Comm *comm, int *err, ...) {
 }
 #pragma GCC diagnostic warning "-Wunused-parameter"
 
-CircleImpl::CircleImpl(Circle* parent_, RuntimeFlags runtimeFlags_) :
+/**
+ * Initialize a Circle instance for parallel processing.
+ */
+CircleImpl::CircleImpl(Circle* parent_, cb createCallback_, cb processCallback_,
+  RuntimeFlags runtimeFlags_) :
+  createCallback(createCallback_), processCallback(processCallback_),
+  reduceInitCallback(nullptr), reduceOperationCallback(nullptr), reduceFinalizeCallback(nullptr),
   /* initialize reduction period to 0 seconds
    * to disable reductions by default */
   reduce_period(0), runtimeFlags(runtimeFlags_),
@@ -369,6 +371,36 @@ CircleImpl::CircleImpl(Circle* parent_, RuntimeFlags runtimeFlags_) :
   /* setup an MPI error handler */
   MPI_Comm_create_errhandler(MPI_error_handler, &circle_err);
   MPI_Comm_set_errhandler(comm, circle_err);  
+}
+
+/**
+ * Initialize a Circle instance for parallel processing and reduction.
+ */
+CircleImpl::CircleImpl(Circle* parent_, circle::cb createCallback_, circle::cb processCallback_,
+  circle::cb_reduce_init_fn reduceInitCallback_, circle::cb_reduce_op_fn reduceOperationCallback_,
+  circle::cb_reduce_fini_fn reduceFinalizeCallback_,
+  circle::RuntimeFlags runtimeFlags_) :
+  createCallback(createCallback_), processCallback(processCallback_),
+  reduceInitCallback(reduceInitCallback_), reduceOperationCallback(reduceOperationCallback_),
+  reduceFinalizeCallback(reduceFinalizeCallback_),
+  /* initialize reduction period to 0 seconds
+   * to disable reductions by default */
+  reduce_period(0), runtimeFlags(runtimeFlags_),
+  logStream(stdout), reduce_buf(nullptr),
+  logLevel(LogLevel::Fatal),
+  rank(-1), parent(parent_) {
+  queue = new Queue(parent);
+
+  /* initialize width of communication tree */
+  tree_width = 64;
+
+  MPI_Comm_dup(MPI_COMM_WORLD, &comm);
+  MPI_Comm_set_name(comm, WORK_COMM_NAME);
+  MPI_Comm_rank(comm, &rank);
+
+  /* setup an MPI error handler */
+  MPI_Comm_create_errhandler(MPI_error_handler, &circle_err);
+  MPI_Comm_set_errhandler(comm, circle_err);
 }
 
 CircleImpl::~CircleImpl()
