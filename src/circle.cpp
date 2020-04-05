@@ -94,7 +94,7 @@ int circle::init(int* argc, char **argv[]) {
  */
 void CircleImpl::execute() {
   /* initialize all local state variables */
-  State state(parent, reduce_buf, reduce_buf_size);
+  State state(parent, comm, queue, reduce_buf, reduce_buf_size);
 
   /* print settings of some runtime tunables */
   if ((runtimeFlags & RuntimeFlags::SplitEqual) !=
@@ -271,10 +271,14 @@ uint32_t Circle::localQueueSize() {
   return (uint32_t)impl->queue->count;
 }
 
+int Circle::getTreeWidth() const { return impl->tree_width; }
+
 /**
  * Change the width of the k-ary communication tree.
  */
 void Circle::setTreeWidth(int width) { impl->tree_width = width; }
+
+int Circle::getReducePeriod() const { return impl->reduce_period; }
 
 /**
  * Change the number of seconds between consecutive reductions.
@@ -411,4 +415,3 @@ int8_t CircleImpl::readRestarts() {
 int8_t CircleImpl::checkpoint() {
   return queue->write(parent->getRank());
 }
-

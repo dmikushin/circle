@@ -54,7 +54,7 @@ class TreeState {
 
 public :
 
-  TreeState(Circle* parent, int rank, int nranks, int maxChildren);
+  TreeState(Circle* parent, const MPI_Comm& comm, int rank, int nranks, int maxChildren);
 
   ~TreeState();
 
@@ -75,9 +75,11 @@ public :
 class State {
 
   /* communicator and our rank and its size */
-  MPI_Comm& comm;
+  const MPI_Comm& comm;
   int rank;
   int size;
+
+  Queue* queue;
 
   void *&reduce_buf;
   size_t &reduce_buf_size;
@@ -155,7 +157,8 @@ class State {
 
 public :
 
-  State(Circle* parent, void *&reduce_buf, size_t &reduce_buf_size);
+  State(Circle* parent, const MPI_Comm& comm, Queue* queue,
+        void *&reduce_buf, size_t &reduce_buf_size);
 
   ~State();
 

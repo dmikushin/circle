@@ -14,8 +14,8 @@ using namespace circle::internal;
 /**
  * Initializes all variables local to a rank
  */
-State::State(Circle *parent_, void *&reduce_buf_, size_t &reduce_buf_size_) :
-  parent(parent_), comm(parent_->impl->comm), ABORT_FLAG(0),
+State::State(Circle *parent_, const MPI_Comm& comm_, Queue* queue_, void *&reduce_buf_, size_t &reduce_buf_size_) :
+  parent(parent_), comm(comm_), queue(queue_), ABORT_FLAG(0),
   reduce_buf(reduce_buf_), reduce_buf_size(reduce_buf_size_) {
 
   /* get our rank and number of ranks in communicator */
@@ -39,7 +39,7 @@ State::State(Circle *parent_, void *&reduce_buf_, size_t &reduce_buf_size_) :
   token_send_req = MPI_REQUEST_NULL;
 
   /* allocate memory for our offset arrays */
-  int32_t offsets = parent->impl->queue->strings.size();
+  int32_t offsets = queue->strings.size();
   offsets_count = offsets;
   offsets_send_buf = (int *)calloc((size_t)offsets, sizeof(int));
   offsets_recv_buf = (int *)calloc((size_t)offsets, sizeof(int));
@@ -64,12 +64,12 @@ State::State(Circle *parent_, void *&reduce_buf_, size_t &reduce_buf_size_) :
   }
 
   /* create our collective tree */
-  int tree_width = parent->impl->tree_width;
-  tree = new TreeState(parent, rank, size, tree_width);
+  int tree_width = parent->getTreeWidth();
+  tree = new TreeState(parent, comm, rank, size, tree_width);
 
   /* init state for progress reduction operations */
   reduce_enabled = 0;
-  double secs = (double)parent->impl->reduce_period;
+  double secs = (double)parent->getReducePeriod();
   if (secs > 0.0) {
     reduce_enabled = 1;
   }
@@ -1141,7 +1141,7 @@ int32_t State::workReceive(Queue *qp, int source, int size) {
   size_t new_bytes = (size_t)(qp->head + (uintptr_t)chars) * sizeof(char);
 
   if (new_bytes > qp->base.size()) {
-    if (parent->impl->queue->extend(new_bytes) < 0) {
+    if (queue->extend(new_bytes) < 0) {
       LOG(LogLevel::Error, "Error: Unable to realloc string pool.");
       MPI_Abort(comm, CIRCLE_MPI_ERROR);
       return -1;
@@ -1156,7 +1156,7 @@ int32_t State::workReceive(Queue *qp, int source, int size) {
   int32_t count = items;
 
   if (count > qp->strings.size()) {
-    if (parent->impl->queue->extendStr(count) < 0) {
+    if (queue->extendStr(count) < 0) {
       LOG(LogLevel::Error, "Error: Unable to realloc string array.");
       MPI_Abort(comm, CIRCLE_MPI_ERROR);
       return -1;
@@ -1538,10 +1538,10 @@ void State::mainLoop() {
   /* Loop until done, we break on normal termination or abort */
   while (1) {
     /* Check for and service work requests */
-    workreqCheck(parent->impl->queue, cleanup);
+    workreqCheck(queue, cleanup);
 
     /* process any incoming work receipt messages */
-    workreceiptCheck(parent->impl->queue);
+    workreceiptCheck(queue);
 
     /* check for incoming abort messages */
     abortCheck(cleanup);
@@ -1552,13 +1552,13 @@ void State::mainLoop() {
     }
 
     /* If I have no work, request work from another rank */
-    if (parent->impl->queue->count == 0) {
-      requestWork(parent->impl->queue, cleanup);
+    if (queue->count == 0) {
+      requestWork(queue, cleanup);
     }
 
     /* If I have some work and have not received a signal to
      * abort, process one work item */
-    if (parent->impl->queue->count > 0 && !ABORT_FLAG) {
+    if (queue->count > 0 && !ABORT_FLAG) {
       (*(parent->process_cb))(parent);
       local_objects_processed++;
     }
@@ -1664,7 +1664,7 @@ void State::mainLoop() {
     }
 
     /* send no work message for any work request that comes in */
-    workreqCheck(parent->impl->queue, cleanup);
+    workreqCheck(queue, cleanup);
 
     /* cleanup any outstanding reduction */
     if (reduce_enabled) {
@@ -1672,7 +1672,7 @@ void State::mainLoop() {
     }
 
     /* receive any incoming work reply messages */
-    requestWork(parent->impl->queue, cleanup);
+    requestWork(queue, cleanup);
 
     /* drain any outstanding abort messages */
     abortCheck(cleanup);

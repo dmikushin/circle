@@ -150,10 +150,14 @@ public :
    */
   void setRuntimeFlags(enum RuntimeFlags options);
 
+  int getTreeWidth() const;
+
   /**
    * Change the width of the k-ary communication tree.
    */
   void setTreeWidth(int width);
+
+  int getReducePeriod() const;
 
   /**
    * Change the number of seconds between consecutive reductions.

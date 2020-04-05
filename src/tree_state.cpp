@@ -22,7 +22,7 @@ using namespace circle::internal;
 /* given the process's rank and the number of ranks, this computes a k-ary
  * tree rooted at rank 0, the structure records the number of children
  * of the local rank and the list of their ranks */
-TreeState::TreeState(Circle* parent_, int rank_, int nranks_, int maxChildren_) :
+TreeState::TreeState(Circle* parent_, const MPI_Comm& comm, int rank_, int nranks_, int maxChildren_) :
   parent(parent_), rank(rank_), nranks(nranks_),
   parentRank(MPI_PROC_NULL), nchildren(0), childrenRanks(nullptr),
   maxChildren(maxChildren_) {
@@ -33,7 +33,7 @@ TreeState::TreeState(Circle* parent_, int rank_, int nranks_, int maxChildren_) 
 
     if (childrenRanks == NULL) {
       LOG(LogLevel::Fatal, "Failed to allocate memory for list of children.");
-      MPI_Abort(parent->impl->comm, CIRCLE_MPI_ERROR);
+      MPI_Abort(comm, CIRCLE_MPI_ERROR);
     }
   }
 
