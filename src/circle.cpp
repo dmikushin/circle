@@ -180,7 +180,7 @@ void Circle::setLogLevel(enum LogLevel logLevel_) {
  *
  * @return time in seconds since an arbitrary time in the past.
  */
-double wtime(void) { return MPI_Wtime(); }
+double circle::wtime() { return MPI_Wtime(); }
 
 /**
  * Initialize a Circle instance for parallel processing.
@@ -250,7 +250,7 @@ int Circle::dequeue(std::string &element) {
 /**
  * Wrapper for getting the local queue size
  */
-uint32_t Circle::localQueueSize() { return (uint32_t)impl->queue->count; }
+uint32_t Circle::getLocalQueueSize() { return (uint32_t)impl->queue->count; }
 
 int Circle::getTreeWidth() const { return impl->tree_width; }
 

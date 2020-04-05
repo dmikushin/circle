@@ -1,5 +1,5 @@
-#ifndef LANL_CIRCLE_H
-#define LANL_CIRCLE_H
+#ifndef LANL_CIRCLE_HPP
+#define LANL_CIRCLE_HPP
 
 #include <stddef.h>
 #include <stdint.h>
@@ -163,7 +163,7 @@ public:
   /**
    * Call this function to have all ranks dump a checkpoint file and exit.
    */
-  void abort(void);
+  void abort();
 
   /**
    * Call this function to read in libcircle restart files.
@@ -186,7 +186,7 @@ public:
   int dequeue(std::vector<uint8_t> &element);
   int dequeue(std::string &element);
 
-  uint32_t localQueueSize();
+  uint32_t getLocalQueueSize();
 
   friend class circle::internal::CircleImpl;
 };
@@ -205,8 +205,8 @@ int init(int *argc, char **argv[]);
 /**
  * Returns an elapsed time on the calling processor for benchmarking purposes.
  */
-double wtime(void);
+double wtime();
 
 } // namespace circle
 
-#endif /* LANL_CIRCLE_H */
+#endif /* LANL_CIRCLE_HPP */
