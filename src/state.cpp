@@ -100,9 +100,9 @@ State::State(Circle* parent_) : parent(parent_), comm(parent_->impl->comm) {
   abort_outstanding = 0;
 
   /* compute number of MPI requets we'll use in abort
-   * (parent + num_children)*2 for one isend/irecv each */
-  int num_req = tree->children;
-  if (tree->parent_rank != MPI_PROC_NULL) {
+   * (parent + nchildren)*2 for one isend/irecv each */
+  int num_req = tree->getChildrenCount();
+  if (tree->getParentRank() != MPI_PROC_NULL) {
     num_req++;
   }
   num_req *= 2;
@@ -142,17 +142,17 @@ void State::reduceCheck(int count, int cleanup) {
   MPI_Status status;
 
   /* get info about tree */
-  int parent_rank = tree->parent_rank;
-  int children = tree->children;
-  int *child_ranks = tree->child_ranks;
+  int parentRank = tree->getParentRank();
+  int nchildren = tree->getChildrenCount();
+  const int *childrenRanks = tree->getChildrenRanks();
 
   /* if we have an outstanding reduce, check messages from children,
    * otherwise, check whether we should start a new reduce */
   if (reduce_outstanding) {
     /* got a reduce outstanding, check messages from our children */
-    for (i = 0; i < children; i++) {
+    for (i = 0; i < nchildren; i++) {
       /* pick a child */
-      int child = child_ranks[i];
+      int child = childrenRanks[i];
 
       /* check whether this child has sent us a reduce message */
       MPI_Iprobe(child, CIRCLE_TAG_REDUCE, comm, &flag, &status);
@@ -218,24 +218,24 @@ void State::reduceCheck(int count, int cleanup) {
     }
 
     /* check whether we've gotten replies from all children */
-    if (reduce_replies == children) {
+    if (reduce_replies == nchildren) {
       /* all children have replied, add our own content to reduce buffer */
       reduce_buf[1] += (long long int)count;
 
       /* send message to parent if we have one */
-      if (parent_rank != MPI_PROC_NULL) {
+      if (parentRank != MPI_PROC_NULL) {
         /* get size of user data */
         int bytes = (int)parent->impl->reduce_buf_size;
         reduce_buf[2] = (long long int)bytes;
 
         /* send partial result to parent */
-        MPI_Send(reduce_buf, 3, MPI_LONG_LONG, parent_rank,
+        MPI_Send(reduce_buf, 3, MPI_LONG_LONG, parentRank,
                  CIRCLE_TAG_REDUCE, comm);
 
         /* also send along user data if any, and if it is valid */
         if (bytes > 0 && reduce_buf[0] == MSG_VALID) {
           void *currbuf = parent->impl->reduce_buf;
-          MPI_Send(currbuf, bytes, MPI_BYTE, parent_rank,
+          MPI_Send(currbuf, bytes, MPI_BYTE, parentRank,
                    CIRCLE_TAG_REDUCE, comm);
         }
       } else {
@@ -266,18 +266,18 @@ void State::reduceCheck(int count, int cleanup) {
 
     if (time_now >= time_next || cleanup) {
       /* time has expired, new reduce should be started */
-      if (parent_rank == MPI_PROC_NULL) {
+      if (parentRank == MPI_PROC_NULL) {
         /* we're the root, kick it off */
         start_reduce = 1;
       } else {
         /* we're not the root, check whether parent sent us a message */
-        MPI_Iprobe(parent_rank, CIRCLE_TAG_REDUCE, comm, &flag,
+        MPI_Iprobe(parentRank, CIRCLE_TAG_REDUCE, comm, &flag,
                    &status);
 
         /* kick off reduce if message came in */
         if (flag) {
           /* receive message from parent and set flag to start reduce */
-          MPI_Recv(NULL, 0, MPI_BYTE, parent_rank, CIRCLE_TAG_REDUCE,
+          MPI_Recv(NULL, 0, MPI_BYTE, parentRank, CIRCLE_TAG_REDUCE,
                    comm, &status);
           start_reduce = 1;
         }
@@ -293,9 +293,9 @@ void State::reduceCheck(int count, int cleanup) {
 
       /* set message to invalid data, and send it back to parent
        * if we have one */
-      if (parent_rank != MPI_PROC_NULL) {
+      if (parentRank != MPI_PROC_NULL) {
         reduce_buf[0] = MSG_INVALID;
-        MPI_Send(reduce_buf, 3, MPI_LONG_LONG, parent_rank,
+        MPI_Send(reduce_buf, 3, MPI_LONG_LONG, parentRank,
                  CIRCLE_TAG_REDUCE, comm);
       }
     }
@@ -319,8 +319,8 @@ void State::reduceCheck(int count, int cleanup) {
       }
 
       /* send message to each child */
-      for (i = 0; i < children; i++) {
-        int child = child_ranks[i];
+      for (i = 0; i < nchildren; i++) {
+        int child = childrenRanks[i];
         MPI_Send(NULL, 0, MPI_BYTE, child, CIRCLE_TAG_REDUCE, comm);
       }
     }
@@ -333,9 +333,9 @@ void State::reduceSync(int count) {
   MPI_Status status;
 
   /* get info about tree */
-  int parent_rank = tree->parent_rank;
-  int children = tree->children;
-  int *child_ranks = tree->child_ranks;
+  int parentRank = tree->getParentRank();
+  int nchildren = tree->getChildrenCount();
+  const int *childrenRanks = tree->getChildrenRanks();
 
   /* initialize state for a fresh reduction */
   reduce_buf[0] = MSG_VALID;
@@ -350,9 +350,9 @@ void State::reduceSync(int count) {
   }
 
   /* wait for messages from our children */
-  for (i = 0; i < children; i++) {
+  for (i = 0; i < nchildren; i++) {
     /* pick a child */
-    int child = child_ranks[i];
+    int child = childrenRanks[i];
 
     /* receive message form child, first int contains
      * flag indicating whether message is valid,
@@ -394,19 +394,19 @@ void State::reduceSync(int count) {
   }
 
   /* send message to parent if we have one */
-  if (parent_rank != MPI_PROC_NULL) {
+  if (parentRank != MPI_PROC_NULL) {
     /* get size of user data */
     int bytes = (int)parent->impl->reduce_buf_size;
     reduce_buf[2] = (long long int)bytes;
 
     /* send partial result to parent */
-    MPI_Send(reduce_buf, 3, MPI_LONG_LONG, parent_rank,
+    MPI_Send(reduce_buf, 3, MPI_LONG_LONG, parentRank,
              CIRCLE_TAG_REDUCE, comm);
 
     /* also send along user data if any */
     if (bytes > 0) {
       void *currbuf = parent->impl->reduce_buf;
-      MPI_Send(currbuf, bytes, MPI_BYTE, parent_rank, CIRCLE_TAG_REDUCE,
+      MPI_Send(currbuf, bytes, MPI_BYTE, parentRank, CIRCLE_TAG_REDUCE,
                comm);
     }
   } else {
@@ -436,12 +436,12 @@ int State::barrierTest() {
   }
 
   /* get info about tree */
-  int parent_rank = tree->parent_rank;
-  int children = tree->children;
-  int *child_ranks = tree->child_ranks;
+  int parentRank = tree->getParentRank();
+  int nchildren = tree->getChildrenCount();
+  const int *childrenRanks = tree->getChildrenRanks();
 
   /* check whether we have received message from all children (if any) */
-  if (barrier_replies < children) {
+  if (barrier_replies < nchildren) {
     /* still waiting on barrier messages from our children */
     MPI_Iprobe(MPI_ANY_SOURCE, CIRCLE_TAG_BARRIER, comm, &flag,
                &status);
@@ -463,10 +463,10 @@ int State::barrierTest() {
   /* if we have not sent a message to our parent, and we have
    * received a message from all of our children (or we have
    * no children), send a message to our parent */
-  if (!barrier_up && barrier_replies == children) {
+  if (!barrier_up && barrier_replies == nchildren) {
     /* send a message to our parent if we have one */
-    if (parent_rank != MPI_PROC_NULL) {
-      MPI_Send(NULL, 0, MPI_BYTE, parent_rank, CIRCLE_TAG_BARRIER,
+    if (parentRank != MPI_PROC_NULL) {
+      MPI_Send(NULL, 0, MPI_BYTE, parentRank, CIRCLE_TAG_BARRIER,
                comm);
     }
 
@@ -480,13 +480,13 @@ int State::barrierTest() {
   int complete = 0;
 
   if (barrier_up) {
-    if (parent_rank != MPI_PROC_NULL) {
+    if (parentRank != MPI_PROC_NULL) {
       /* check for message from parent */
-      MPI_Iprobe(parent_rank, CIRCLE_TAG_BARRIER, comm, &flag, &status);
+      MPI_Iprobe(parentRank, CIRCLE_TAG_BARRIER, comm, &flag, &status);
 
       if (flag) {
         /* got a message, receive message */
-        MPI_Recv(NULL, 0, MPI_BYTE, parent_rank, CIRCLE_TAG_BARRIER,
+        MPI_Recv(NULL, 0, MPI_BYTE, parentRank, CIRCLE_TAG_BARRIER,
                  comm, &status);
 
         /* mark barrier as complete */
@@ -504,9 +504,9 @@ int State::barrierTest() {
   if (complete) {
     int i;
 
-    for (i = 0; i < children; i++) {
+    for (i = 0; i < nchildren; i++) {
       /* get rank of child */
-      int child = child_ranks[i];
+      int child = childrenRanks[i];
 
       /* send child a message */
       MPI_Send(NULL, 0, MPI_BYTE, child, CIRCLE_TAG_BARRIER, comm);
@@ -549,7 +549,7 @@ int State::barrierTest() {
  * have terminated.
  *
  * state: waiting for children
- *   (term_replies < children) && (term_up == 0)
+ *   (term_replies < nchildren) && (term_up == 0)
  * A process waits until it has received reduction messages
  * from all of its children.  It ANDs the flags from its
  * children with its own flag.  Upon receiving messages
@@ -558,7 +558,7 @@ int State::barrierTest() {
  * to its parent.
  *
  * state: waiting for parent
- *   (term_replies == children) && (term_up == 1)
+ *   (term_replies == nchildren) && (term_up == 1)
  * A process waits for its parent.  If the process is the
  * root of the tree or it has received a message from its
  * parent, it forwards the final reduction result to its
@@ -599,12 +599,12 @@ int State::checkForTermAllReduce() {
   MPI_Status status;
 
   /* get info about tree */
-  int parent_rank = tree->parent_rank;
-  int children = tree->children;
-  int *child_ranks = tree->child_ranks;
+  int parentRank = tree->getParentRank();
+  int nchildren = tree->getChildrenCount();
+  const int *childrenRanks = tree->getChildrenRanks();
 
   /* check whether we have received message from all children (if any) */
-  while (term_replies < children) {
+  while (term_replies < nchildren) {
     /* still waiting on input messages from our children,
      * probe to see if we got a message from a child */
     MPI_Iprobe(MPI_ANY_SOURCE, CIRCLE_TAG_TERM, comm, &flag, &status);
@@ -644,10 +644,10 @@ int State::checkForTermAllReduce() {
   /* if we have not sent a message to our parent, and we have
    * received a message from all of our children (or we have
    * no children), send a message to our parent */
-  if (!term_up && term_replies == children) {
+  if (!term_up && term_replies == nchildren) {
     /* send a message to our parent if we have one */
-    if (parent_rank != MPI_PROC_NULL) {
-      MPI_Send(&term_flag, 1, MPI_INT, parent_rank, CIRCLE_TAG_TERM,
+    if (parentRank != MPI_PROC_NULL) {
+      MPI_Send(&term_flag, 1, MPI_INT, parentRank, CIRCLE_TAG_TERM,
                comm);
     } else {
       /* we are root, capture result of allreduce */
@@ -669,13 +669,13 @@ int State::checkForTermAllReduce() {
   /* if we have sent to our parent, check whether our parent
    * has sent the result back down */
   if (term_up) {
-    if (parent_rank != MPI_PROC_NULL) {
+    if (parentRank != MPI_PROC_NULL) {
       /* check for message from parent */
-      MPI_Iprobe(parent_rank, CIRCLE_TAG_TERM, comm, &flag, &status);
+      MPI_Iprobe(parentRank, CIRCLE_TAG_TERM, comm, &flag, &status);
 
       if (flag) {
         /* got a message, receive message */
-        MPI_Recv(&term_flag, 1, MPI_INT, parent_rank, CIRCLE_TAG_TERM,
+        MPI_Recv(&term_flag, 1, MPI_INT, parentRank, CIRCLE_TAG_TERM,
                  comm, &status);
 
         /* mark allreduce as complete */
@@ -692,9 +692,9 @@ int State::checkForTermAllReduce() {
    * and return true */
   if (complete) {
     int i;
-    for (i = 0; i < children; i++) {
+    for (i = 0; i < nchildren; i++) {
       /* get rank of child */
-      int child = child_ranks[i];
+      int child = childrenRanks[i];
 
       /* send child a message */
       MPI_Send(&term_flag, 1, MPI_INT, child, CIRCLE_TAG_TERM, comm);
@@ -719,18 +719,18 @@ void State::abortReduce() {
   MPI_Status status;
 
   /* get info about tree */
-  int parent_rank = tree->parent_rank;
-  int children = tree->children;
-  int *child_ranks = tree->child_ranks;
+  int parentRank = tree->getParentRank();
+  int nchildren = tree->getChildrenCount();
+  const int *childrenRanks = tree->getChildrenRanks();
 
   /* initialize flag to our abort state */
   int flag = (int)ABORT_FLAG;
 
   /* reduce messages from children if any */
   int i;
-  for (i = 0; i < children; i++) {
+  for (i = 0; i < nchildren; i++) {
     /* get rank of child */
-    int child = child_ranks[i];
+    int child = childrenRanks[i];
 
     /* receive message from child */
     int child_flag;
@@ -742,20 +742,20 @@ void State::abortReduce() {
   }
 
   /* send a message to our parent and wait on reply if we have one */
-  if (parent_rank != MPI_PROC_NULL) {
+  if (parentRank != MPI_PROC_NULL) {
     /* send partial result to parent */
-    MPI_Send(&flag, 1, MPI_INT, parent_rank, CIRCLE_TAG_ABORT_REDUCE,
+    MPI_Send(&flag, 1, MPI_INT, parentRank, CIRCLE_TAG_ABORT_REDUCE,
              comm);
 
     /* wait for final result from parent */
-    MPI_Recv(&flag, 1, MPI_INT, parent_rank, CIRCLE_TAG_ABORT_REDUCE,
+    MPI_Recv(&flag, 1, MPI_INT, parentRank, CIRCLE_TAG_ABORT_REDUCE,
              comm, &status);
   }
 
   /* forward result to children */
-  for (i = 0; i < children; i++) {
+  for (i = 0; i < nchildren; i++) {
     /* get rank of child */
-    int child = child_ranks[i];
+    int child = childrenRanks[i];
 
     /* send child a message */
     MPI_Send(&flag, 1, MPI_INT, child, CIRCLE_TAG_ABORT_REDUCE, comm);
@@ -804,29 +804,29 @@ void State::abortStart(int cleanup) {
 
   /* otherwise, send abort messages through tree,
    * get info about our parent and children */
-  int parent_rank = tree->parent_rank;
-  int num_children = tree->children;
-  int *child_ranks = tree->child_ranks;
+  int parentRank = tree->getParentRank();
+  int nchildren = tree->getChildrenCount();
+  const int *childrenRanks = tree->getChildrenRanks();
 
   /* index into request array */
   int k = 0;
 
   /* send abort message to our parent if we have one */
-  if (parent_rank != MPI_PROC_NULL) {
+  if (parentRank != MPI_PROC_NULL) {
     /* post a receive for the reply to our abort request message */
-    MPI_Irecv(NULL, 0, MPI_BYTE, parent_rank, CIRCLE_TAG_ABORT_REPLY,
+    MPI_Irecv(NULL, 0, MPI_BYTE, parentRank, CIRCLE_TAG_ABORT_REPLY,
               comm, &abort_req[k++]);
 
     /* post abort request to our parent */
-    MPI_Isend(NULL, 0, MPI_BYTE, parent_rank, CIRCLE_TAG_ABORT_REQUEST,
+    MPI_Isend(NULL, 0, MPI_BYTE, parentRank, CIRCLE_TAG_ABORT_REQUEST,
               comm, &abort_req[k++]);
   }
 
   /* send abort message to each of our children */
   int i;
-  for (i = 0; i < num_children; i++) {
+  for (i = 0; i < nchildren; i++) {
     /* get rank of child */
-    int child_rank = child_ranks[i];
+    int child_rank = childrenRanks[i];
 
     /* post a receive for the reply to our abort request message */
     MPI_Irecv(NULL, 0, MPI_BYTE, child_rank, CIRCLE_TAG_ABORT_REPLY,

@@ -41,18 +41,18 @@ typedef struct options {
 /* records info about the tree of spawn processes */
 class TreeState {
 
-public : // TODO remove
   int rank;         /* our global rank (0 to ranks-1) */
-  int ranks;        /* number of nodes in tree */
-  int parent_rank;  /* rank of parent */
-  int children;     /* number of children we have */
-  int *child_ranks; /* global ranks of our children */
+  int nranks;        /* number of nodes in tree */
+  int parentRank;  /* rank of parent */
+  int nchildren;     /* number of children we have */
+  int *childrenRanks; /* global ranks of our children */
+  int maxChildren; /* the maximum number of children this task may have */
 
   Circle* parent;
 
 public :
 
-  TreeState(Circle* parent_, int rank, int ranks, int k);
+  TreeState(Circle* parent, int rank, int nranks, int maxChildren);
 
   ~TreeState();
 
@@ -62,6 +62,12 @@ public :
     if (parent)
       parent->log(logLevel_, filename, lineno, std::forward<Args>(args) ...);
   }
+
+  int getChildrenCount() const;
+
+  int getParentRank() const;
+
+  const int* getChildrenRanks() const;
 };
 
 class State {
