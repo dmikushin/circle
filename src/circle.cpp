@@ -195,7 +195,7 @@ double wtime(void) { return MPI_Wtime(); }
 /**
  * Initialize a Circle instance for parallel processing.
  */
-Circle::Circle(cb createCallback, cb processCallback,
+Circle::Circle(circle::CallbackFunc createCallback, circle::CallbackFunc processCallback,
   RuntimeFlags runtimeFlags) {
   impl = new CircleImpl(this, createCallback, processCallback, runtimeFlags);
 }
@@ -203,9 +203,9 @@ Circle::Circle(cb createCallback, cb processCallback,
 /**
  * Initialize a Circle instance for parallel processing and reduction.
  */
-Circle::Circle(circle::cb createCallback, circle::cb processCallback,
-  circle::cb_reduce_init_fn reduceInitCallback, circle::cb_reduce_op_fn reduceOperationCallback,
-  circle::cb_reduce_fini_fn reduceFinalizeCallback,
+Circle::Circle(circle::CallbackFunc createCallback, circle::CallbackFunc processCallback,
+  circle::reduceInitCallbackFunc reduceInitCallback, circle::reduceOperationCallbackFunc reduceOperationCallback,
+  circle::reduceFinalizeCallbackFunc reduceFinalizeCallback,
   circle::RuntimeFlags runtimeFlags) {
   impl = new CircleImpl(this, createCallback, processCallback,
     reduceInitCallback, reduceOperationCallback, reduceFinalizeCallback, runtimeFlags);
@@ -349,7 +349,7 @@ static void MPI_error_handler(MPI_Comm *comm, int *err, ...) {
 /**
  * Initialize a Circle instance for parallel processing.
  */
-CircleImpl::CircleImpl(Circle* parent_, cb createCallback_, cb processCallback_,
+CircleImpl::CircleImpl(Circle* parent_, circle::CallbackFunc createCallback_, circle::CallbackFunc processCallback_,
   RuntimeFlags runtimeFlags_) :
   createCallback(createCallback_), processCallback(processCallback_),
   reduceInitCallback(nullptr), reduceOperationCallback(nullptr), reduceFinalizeCallback(nullptr),
@@ -376,9 +376,9 @@ CircleImpl::CircleImpl(Circle* parent_, cb createCallback_, cb processCallback_,
 /**
  * Initialize a Circle instance for parallel processing and reduction.
  */
-CircleImpl::CircleImpl(Circle* parent_, circle::cb createCallback_, circle::cb processCallback_,
-  circle::cb_reduce_init_fn reduceInitCallback_, circle::cb_reduce_op_fn reduceOperationCallback_,
-  circle::cb_reduce_fini_fn reduceFinalizeCallback_,
+CircleImpl::CircleImpl(Circle* parent_, circle::CallbackFunc createCallback_, circle::CallbackFunc processCallback_,
+  circle::reduceInitCallbackFunc reduceInitCallback_, circle::reduceOperationCallbackFunc reduceOperationCallback_,
+  circle::reduceFinalizeCallbackFunc reduceFinalizeCallback_,
   circle::RuntimeFlags runtimeFlags_) :
   createCallback(createCallback_), processCallback(processCallback_),
   reduceInitCallback(reduceInitCallback_), reduceOperationCallback(reduceOperationCallback_),

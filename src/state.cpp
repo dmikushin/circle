@@ -14,9 +14,9 @@ using namespace circle::internal;
 /**
  * Initializes all variables local to a rank
  */
-State::State(Circle *parent_, circle::cb processCallback_,
-  circle::cb_reduce_init_fn reduceInitCallback_, circle::cb_reduce_op_fn reduceOperationCallback_,
-  circle::cb_reduce_fini_fn reduceFinalizeCallback_,
+State::State(Circle *parent_, circle::CallbackFunc processCallback_,
+  circle::reduceInitCallbackFunc reduceInitCallback_, circle::reduceOperationCallbackFunc reduceOperationCallback_,
+  circle::reduceFinalizeCallbackFunc reduceFinalizeCallback_,
   const MPI_Comm& comm_, Queue* queue_, void *&reduce_buf_, size_t &reduce_buf_size_) :
   processCallback(processCallback_), reduceInitCallback(reduceInitCallback_),
   reduceOperationCallback(reduceOperationCallback_), reduceFinalizeCallback(reduceFinalizeCallback_),

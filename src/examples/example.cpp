@@ -68,13 +68,13 @@ int main(int argc, char *argv[]) {
    * libcircle about our function which creates the initial work. For MPI nerds,
    * this is your rank 0 process.
    */
-  //circle::cb_create(&my_create_some_work);
+  //circle::CallbackFunc_create(&my_create_some_work);
 
   /*
    * After you give libcircle a way to create work, you need to tell it how that
    * work should be processed.
    */
-  //circle::cb_process(&my_process_some_work);
+  //circle::CallbackFunc_process(&my_process_some_work);
 
   circle::Circle example(my_create_some_work, my_process_some_work,
     circle::RuntimeFlags::DefaultFlags);

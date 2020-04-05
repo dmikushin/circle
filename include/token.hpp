@@ -73,11 +73,11 @@ public :
 };
 
 class State {
-  circle::cb processCallback;
+  circle::CallbackFunc processCallback;
 
-  circle::cb_reduce_init_fn reduceInitCallback;
-  circle::cb_reduce_op_fn reduceOperationCallback;
-  circle::cb_reduce_fini_fn reduceFinalizeCallback;
+  circle::reduceInitCallbackFunc reduceInitCallback;
+  circle::reduceOperationCallbackFunc reduceOperationCallback;
+  circle::reduceFinalizeCallbackFunc reduceFinalizeCallback;
 
   /* communicator and our rank and its size */
   const MPI_Comm& comm;
@@ -162,8 +162,8 @@ class State {
 
 public :
 
-  State(Circle* parent, circle::cb processCallback, circle::cb_reduce_init_fn reduceInitCallback,
-    circle::cb_reduce_op_fn reduceOperationCallback, circle::cb_reduce_fini_fn reduceFinalizeCallback,
+  State(Circle* parent, circle::CallbackFunc processCallback, circle::reduceInitCallbackFunc reduceInitCallback,
+    circle::reduceOperationCallbackFunc reduceOperationCallback, circle::reduceFinalizeCallbackFunc reduceFinalizeCallback,
     const MPI_Comm& comm, Queue* queue, void *&reduce_buf, size_t &reduce_buf_size);
 
   ~State();

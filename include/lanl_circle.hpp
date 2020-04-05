@@ -47,17 +47,17 @@ class Circle;
 /**
  * The type for defining callbacks for create and process.
  */
-typedef void (*cb)(circle::Circle *circle);
+typedef void (*CallbackFunc)(circle::Circle *circle);
 
 /**
  * Callbacks for initializing, executing, and obtaining final result
  * of a reduction
  */
-typedef void (*cb_reduce_init_fn)(circle::Circle *circle);
-typedef void (*cb_reduce_op_fn)(circle::Circle *circle,
+typedef void (*reduceInitCallbackFunc)(circle::Circle *circle);
+typedef void (*reduceOperationCallbackFunc)(circle::Circle *circle,
 		                const void *buf1, size_t size1,
                                 const void *buf2, size_t size2);
-typedef void (*cb_reduce_fini_fn)(circle::Circle *circle,
+typedef void (*reduceFinalizeCallbackFunc)(circle::Circle *circle,
 		                  const void *buf, size_t size);
 
 namespace internal {
@@ -74,15 +74,15 @@ public :
   /**
    * Initialize a Circle instance for parallel processing.
    */
-  Circle(circle::cb createCallback, circle::cb processCallback,
+  Circle(circle::CallbackFunc createCallback, circle::CallbackFunc processCallback,
          circle::RuntimeFlags runtimeFlags);
 
   /**
    * Initialize a Circle instance for parallel processing and reduction.
    */
-  Circle(circle::cb createCallback, circle::cb processCallback,
-         circle::cb_reduce_init_fn reduceInitCallback, circle::cb_reduce_op_fn reduceOperationCallback,
-	 circle::cb_reduce_fini_fn reduceFinalizeCallback,
+  Circle(circle::CallbackFunc createCallback, circle::CallbackFunc processCallback,
+         circle::reduceInitCallbackFunc reduceInitCallback, circle::reduceOperationCallbackFunc reduceOperationCallback,
+	 circle::reduceFinalizeCallbackFunc reduceFinalizeCallback,
          circle::RuntimeFlags runtimeFlags);
 
   ~Circle();

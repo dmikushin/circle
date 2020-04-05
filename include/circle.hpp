@@ -13,12 +13,12 @@ namespace internal {
 class CircleImpl {
   Circle* parent;
 
-  circle::cb createCallback;
-  circle::cb processCallback;
+  circle::CallbackFunc createCallback;
+  circle::CallbackFunc processCallback;
 
-  circle::cb_reduce_init_fn reduceInitCallback;
-  circle::cb_reduce_op_fn reduceOperationCallback;
-  circle::cb_reduce_fini_fn reduceFinalizeCallback;
+  circle::reduceInitCallbackFunc reduceInitCallback;
+  circle::reduceOperationCallbackFunc reduceOperationCallback;
+  circle::reduceFinalizeCallbackFunc reduceFinalizeCallback;
 
   MPI_Comm comm;
   MPI_Errhandler circle_err;
@@ -44,15 +44,15 @@ public :
   /**
    * Initialize a Circle instance for parallel processing.
    */
-  CircleImpl(Circle* parent, circle::cb createCallback, circle::cb processCallback,
+  CircleImpl(Circle* parent, circle::CallbackFunc createCallback, circle::CallbackFunc processCallback,
              circle::RuntimeFlags runtimeFlags);
 
   /**
    * Initialize a Circle instance for parallel processing and reduction.
    */
-  CircleImpl(Circle* parent, circle::cb createCallback, circle::cb processCallback,
-             circle::cb_reduce_init_fn reduceInitCallback, circle::cb_reduce_op_fn reduceOperationCallback,
-             circle::cb_reduce_fini_fn reduceFinalizeCallback,
+  CircleImpl(Circle* parent, circle::CallbackFunc createCallback, circle::CallbackFunc processCallback,
+             circle::reduceInitCallbackFunc reduceInitCallback, circle::reduceOperationCallbackFunc reduceOperationCallback,
+             circle::reduceFinalizeCallbackFunc reduceFinalizeCallback,
              circle::RuntimeFlags runtimeFlags);
 
   ~CircleImpl();
