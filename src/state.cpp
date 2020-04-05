@@ -1290,7 +1290,7 @@ void State::sendNoWork(int dest) {
 
   MPI_Request r;
   MPI_Isend(&no_work, 1, MPI_INT, dest, CIRCLE_TAG_WORK_REPLY,
-            parent->impl->comm, &r);
+            comm, &r);
   MPI_Wait(&r, MPI_STATUS_IGNORE);
 }
 
