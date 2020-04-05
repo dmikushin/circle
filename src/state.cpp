@@ -7,15 +7,6 @@
 #include "log.hpp"
 #include "queue.hpp"
 #include "token.hpp"
-#include "worker.hpp"
-
-namespace circle {
-namespace internal {
-
-extern int8_t ABORT_FLAG;
-
-} // namespace internal
-} // namespace circle
 
 using namespace circle;
 using namespace circle::internal;
@@ -23,7 +14,7 @@ using namespace circle::internal;
 /**
  * Initializes all variables local to a rank
  */
-State::State(Circle *parent_) : parent(parent_), comm(parent_->impl->comm) {
+State::State(Circle *parent_) : parent(parent_), comm(parent_->impl->comm), ABORT_FLAG(0) {
 
   /* get our rank and number of ranks in communicator */
   MPI_Comm_rank(comm, &rank);
@@ -65,7 +56,7 @@ State::State(Circle *parent_) : parent(parent_), comm(parent_->impl->comm) {
   /* determine whether we are using tree-based or circle-based
    * termination detection */
   term_tree_enabled = 0;
-  if ((parent->impl->runtimeFlags & circle::RuntimeFlags::TermTree) !=
+  if ((parent->getRuntimeFlags() & circle::RuntimeFlags::TermTree) !=
       circle::RuntimeFlags::None) {
     term_tree_enabled = 1;
   }
@@ -762,10 +753,12 @@ void State::abortReduce() {
  * that they will know to abort.
  */
 void bcast_abort(void) {
-
+#if 0
+  // TODO Rework into Circle::abort that shall trigger state's mainLoop abort()
   /* set global abort variable, this will kick off an abort bcast
    * the next time the worker loop calls abort_check */
   ABORT_FLAG = 1;
+#endif
 }
 
 /**
@@ -1401,7 +1394,7 @@ void State::sendWorkToMany(Queue *qp, int *requestors, int rcount) {
     MPI_Abort(comm, CIRCLE_MPI_ERROR);
   }
 
-  if ((parent->impl->runtimeFlags & RuntimeFlags::SplitEqual) !=
+  if ((parent->getRuntimeFlags() & RuntimeFlags::SplitEqual) !=
       RuntimeFlags::None) {
     /* split queue equally among ourself and all requestors */
     spread_counts(&sizes[0], num_ranks, qp->count);
@@ -1706,6 +1699,12 @@ void State::mainLoop() {
   /* if any process is in the abort state,
    * set all to be in the abort state */
   abortReduce();
+
+  /* we may have dropped out early from an abort signal,
+   * in which case we should checkpoint here */
+  if (ABORT_FLAG) {
+    parent->checkpoint();
+  }
 }
 
 void State::printSummary() {

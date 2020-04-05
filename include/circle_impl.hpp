@@ -12,13 +12,12 @@ namespace internal {
 
 class CircleImpl {
 
-public : // TODO remove
-
+public : // TODO
   Circle* parent;
 
   MPI_Comm comm;
+  MPI_Errhandler circle_err;
 
-  // TODO Move to impl.
   void *reduce_buf;
   size_t reduce_buf_size;
   int reduce_period;
@@ -48,7 +47,24 @@ public :
       parent->log(logLevel_, filename, lineno, std::forward<Args>(args) ...);
   }
 
-  friend class Circle;
+  /**
+   * Once you've defined and told Circle about your callbacks, use this to
+   * execute your program.
+   */
+  void execute();
+
+  /**
+   * Call this function to read in libcircle restart files.
+   */
+  int8_t readRestarts();
+
+  /**
+   * Call this function to read in libcircle restart files.  Each rank
+   * writes a file called circle<rank>.txt
+   */
+  int8_t checkpoint();
+
+  friend class circle::Circle;
 };
 
 } // namespace internal

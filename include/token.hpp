@@ -10,6 +10,8 @@
 
 #include "queue.hpp"
 
+#define CIRCLE_MPI_ERROR 32
+
 namespace circle {
 
 namespace internal {
@@ -76,6 +78,8 @@ class State {
   MPI_Comm& comm;
   int rank;
   int size;
+
+  int8_t ABORT_FLAG;
 
   /* tracks state of token */
   int token_is_local; /* flag indicating whether we have the token */
@@ -262,6 +266,19 @@ public :
    */
   void printSummary();
 };
+
+/* provides address of pointer, and if value of pointer is not NULL,
+ * frees memory and sets pointer value to NULL */
+template <typename T> void free(T **pptr) {
+  if (pptr != NULL) {
+    if (*pptr != NULL) {
+      ::free(*pptr);
+      *pptr = NULL;
+    }
+  }
+
+  return;
+}
 
 } // namespace internal
 

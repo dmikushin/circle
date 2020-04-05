@@ -143,10 +143,12 @@ public :
 
   FILE* getLogStream() const;
 
+  enum RuntimeFlags getRuntimeFlags() const;
+
   /**
    * Change run time flags.
    */
-  void setRuntimeFlags(circle::RuntimeFlags options);
+  void setRuntimeFlags(enum RuntimeFlags options);
 
   /**
    * Change the width of the k-ary communication tree.
@@ -175,6 +177,17 @@ public :
    * Call this function to have all ranks dump a checkpoint file and exit.
    */
   void abort(void);
+
+  /**
+   * Call this function to read in libcircle restart files.
+   */
+  int8_t readRestarts();
+
+  /**
+   * Call this function to read in libcircle restart files.  Each rank
+   * writes a file called circle<rank>.txt
+   */
+  int8_t checkpoint();
 
   /**
    * The interface to the work queue. This can be accessed from within the

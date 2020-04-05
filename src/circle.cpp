@@ -7,7 +7,6 @@
 #include "circle_impl.hpp"
 #include "log.hpp"
 #include "token.hpp"
-#include "worker.hpp"
 
 using namespace circle;
 using namespace circle::internal;
@@ -85,12 +84,76 @@ int circle::init(int* argc, char **argv[]) {
 }
 
 /**
- * Once you've defined and told libcircle about your callbacks, use this to
+ * @brief Sets up libcircle, calls work loop function
+ *
+ * - Main worker function. This function:
+ *     -# Initializes MPI
+ *     -# Initializes internal libcircle data structures
+ *     -# Calls libcircle's main work loop function.
+ *     -# Checkpoints if abort has been called by a rank.
+ */
+void CircleImpl::execute() {
+  /* initialize all local state variables */
+  State state(parent);
+
+  /* print settings of some runtime tunables */
+  if ((runtimeFlags & RuntimeFlags::SplitEqual) !=
+      RuntimeFlags::None) {
+    LOG(LogLevel::Debug, "Using equalized load splitting.");
+  }
+
+  if ((runtimeFlags & RuntimeFlags::SplitRandom) !=
+      RuntimeFlags::None) {
+    LOG(LogLevel::Debug, "Using randomized load splitting.");
+  }
+
+  if ((runtimeFlags & RuntimeFlags::CreateGlobal) !=
+      RuntimeFlags::None) {
+    LOG(LogLevel::Debug, "Create callback enabled on all ranks.");
+  } else {
+    LOG(LogLevel::Debug, "Create callback enabled on rank 0 only.");
+  }
+
+  if ((runtimeFlags & RuntimeFlags::TermTree) !=
+      RuntimeFlags::None) {
+    LOG(LogLevel::Debug, "Using tree termination detection.");
+  } else {
+    LOG(LogLevel::Debug, "Using circle termination detection.");
+  }
+
+  LOG(LogLevel::Debug, "Tree width: %d", tree_width);
+  LOG(LogLevel::Debug, "Reduce period (secs): %d", reduce_period);
+
+  /**********************************
+   * this is where the heavy lifting is done
+   **********************************/
+
+  /* add initial work to queues by calling create_cb,
+   * only invoke on master unless CREATE_GLOBAL is set */
+  if (rank == 0 || (runtimeFlags & RuntimeFlags::CreateGlobal) !=
+                       RuntimeFlags::None) {
+    (*(parent->create_cb))(parent);
+  }
+
+  /* work until we get a terminate message */
+  state.mainLoop();
+
+  /**********************************
+   * end work
+   **********************************/
+
+  /* optionally print summary info */
+  if (parent->impl->logLevel >= LogLevel::Info) {
+    state.printSummary();
+  }
+}
+
+/**
+ * Once you've defined and told Circle about your callbacks, use this to
  * execute your program.
  */
-void Circle::execute() { 
-  Worker worker(this);
-  worker.execute(); 
+void Circle::execute() {
+  impl->execute();
 }
 
 /**
@@ -158,10 +221,14 @@ Circle::~Circle() {
 
 int Circle::getRank() const { return impl->rank; }
 
+enum RuntimeFlags Circle::getRuntimeFlags() const {
+  return impl->runtimeFlags;
+}
+
 /**
  * Change run time flags
  */
-void Circle::setRuntimeFlags(RuntimeFlags runtimeFlags_) {
+void Circle::setRuntimeFlags(enum RuntimeFlags runtimeFlags_) {
   impl->runtimeFlags = runtimeFlags_;
   LOG(LogLevel::Debug, "Circle options set: %X", impl->runtimeFlags);
 }
@@ -246,6 +313,39 @@ void Circle::reduce(const void *buf, size_t size) {
   }
 }
 
+/**
+ * @brief Function to be called in the event of an MPI error.
+ *
+ * This function get registered with MPI to be called
+ * in the event of an MPI Error.  It attempts
+ * to checkpoint.
+ */
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+static void MPI_error_handler(MPI_Comm *comm, int *err, ...) {
+  const char *bt = backtrace(1);
+#if 0
+  // TODO Attach circle to communicator with MPI_Comm_create_keyval
+  char name[MPI_MAX_OBJECT_NAME];
+  int namelen;
+  MPI_Comm_get_name(*comm, name, &namelen);
+
+  if (*err == CIRCLE_MPI_ERROR) {
+    LOG(LogLevel::Error, "Libcircle received abort signal, checkpointing.");
+  } else {
+    char error[MPI_MAX_ERROR_STRING];
+    int error_len = 0;
+    MPI_Error_string(*err, error, &error_len);
+    LOG(LogLevel::Error, "MPI Error in Comm [%s]: %s", name, error);
+    LOG(LogLevel::Error, "Backtrace:\n%s\n", bt);
+    LOG(LogLevel::Error, "Libcircle received MPI error, checkpointing.");
+  }
+  
+  checkpoint();
+#endif
+  abort();
+}
+#pragma GCC diagnostic warning "-Wunused-parameter"
+
 CircleImpl::CircleImpl(Circle* parent_, RuntimeFlags runtimeFlags_) :
   /* initialize reduction period to 0 seconds
    * to disable reductions by default */
@@ -261,6 +361,10 @@ CircleImpl::CircleImpl(Circle* parent_, RuntimeFlags runtimeFlags_) :
   MPI_Comm_dup(MPI_COMM_WORLD, &comm);
   MPI_Comm_set_name(comm, WORK_COMM_NAME);
   MPI_Comm_rank(comm, &rank);
+
+  /* setup an MPI error handler */
+  MPI_Comm_create_errhandler(MPI_error_handler, &circle_err);
+  MPI_Comm_set_errhandler(comm, circle_err);  
 }
 
 CircleImpl::~CircleImpl()
@@ -270,7 +374,41 @@ CircleImpl::~CircleImpl()
   /* free buffer holding user reduction data */
   free(&reduce_buf);
 
+  /* restore original error handler and free our custom one */
+  MPI_Comm_set_errhandler(comm, MPI_ERRORS_ARE_FATAL);
+  MPI_Errhandler_free(&circle_err);
+
   /* free off MPI resources and shut it down */
   MPI_Comm_free(&comm);
+}
+
+/**
+ * Call this function to read in libcircle restart files.
+ */
+int8_t Circle::readRestarts() {
+  return impl->readRestarts();
+}
+
+/**
+ * Call this function to read in libcircle restart files.  Each rank
+ * writes a file called circle<rank>.txt
+ */
+int8_t Circle::checkpoint() {
+  return impl->checkpoint();
+}
+
+/**
+ * Call this function to read in libcircle restart files.
+ */
+int8_t CircleImpl::readRestarts() {
+  return queue->read(parent->getRank());
+}
+
+/**
+ * Call this function to read in libcircle restart files.  Each rank
+ * writes a file called circle<rank>.txt
+ */
+int8_t CircleImpl::checkpoint() {
+  return queue->write(parent->getRank());
 }
 

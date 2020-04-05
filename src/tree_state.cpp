@@ -15,7 +15,6 @@
 #include "circle_impl.hpp"
 #include "log.hpp"
 #include "token.hpp"
-#include "worker.hpp"
 
 using namespace circle;
 using namespace circle::internal;
