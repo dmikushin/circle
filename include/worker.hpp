@@ -38,8 +38,6 @@ public :
   int8_t checkpoint();
 };
 
-void reset_request_vector(State *st);
-
 /* provides address of pointer, and if value of pointer is not NULL,
  * frees memory and sets pointer value to NULL */
 template <typename T> void free(T **pptr) {
