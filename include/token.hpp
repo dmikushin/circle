@@ -72,7 +72,6 @@ public :
 
 class State {
 
-public : // TODO remove
   /* communicator and our rank and its size */
   MPI_Comm& comm;
   int rank;
@@ -243,6 +242,25 @@ public :
    * Distributes a random amount of the local work queue to the n requestors.
    */
   void sendWorkToMany(Queue *qp, int *requestors, int rcount);
+
+  /**
+   * @brief Function that actually does work, calls user callback.
+   *
+   * This is the main body of execution.
+   *
+   * - For every work loop execution, the following happens:
+   *     -# Check for work requests from other ranks.
+   *     -# If this rank doesn't have work, ask a random rank for work.
+   *     -# If this rank has work, call the user callback function.
+   *     -# If after requesting work, this rank still doesn't have any,
+   *        check for termination conditions.
+   */
+  void mainLoop();
+
+  /**
+   * Print summary info.
+   */
+  void printSummary();
 };
 
 } // namespace internal

@@ -2,8 +2,8 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#include "lanl_circle.hpp"
 #include "circle_impl.hpp"
+#include "lanl_circle.hpp"
 #include "log.hpp"
 #include "queue.hpp"
 #include "token.hpp"
@@ -14,7 +14,7 @@ namespace internal {
 
 extern int8_t ABORT_FLAG;
 
-} // namespace impl
+} // namespace internal
 } // namespace circle
 
 using namespace circle;
@@ -23,7 +23,7 @@ using namespace circle::internal;
 /**
  * Initializes all variables local to a rank
  */
-State::State(Circle* parent_) : parent(parent_), comm(parent_->impl->comm) {
+State::State(Circle *parent_) : parent(parent_), comm(parent_->impl->comm) {
 
   /* get our rank and number of ranks in communicator */
   MPI_Comm_rank(comm, &rank);
@@ -166,8 +166,8 @@ void State::reduceCheck(int count, int cleanup) {
          * second int is number of completed libcircle work
          * elements, third int is number of bytes of user data */
         long long int recvbuf[3];
-        MPI_Recv(recvbuf, 3, MPI_LONG_LONG, child, CIRCLE_TAG_REDUCE,
-                 comm, &status);
+        MPI_Recv(recvbuf, 3, MPI_LONG_LONG, child, CIRCLE_TAG_REDUCE, comm,
+                 &status);
 
         /* increment the number of replies */
         reduce_replies++;
@@ -198,8 +198,8 @@ void State::reduceCheck(int count, int cleanup) {
 
           /* receive data */
           int bytes = (int)recvbuf[2];
-          MPI_Recv(inbuf, bytes, MPI_BYTE, child, CIRCLE_TAG_REDUCE,
-                   comm, &status);
+          MPI_Recv(inbuf, bytes, MPI_BYTE, child, CIRCLE_TAG_REDUCE, comm,
+                   &status);
         }
 
         /* if we have valid data, invoke user's callback to
@@ -229,20 +229,19 @@ void State::reduceCheck(int count, int cleanup) {
         reduce_buf[2] = (long long int)bytes;
 
         /* send partial result to parent */
-        MPI_Send(reduce_buf, 3, MPI_LONG_LONG, parentRank,
-                 CIRCLE_TAG_REDUCE, comm);
+        MPI_Send(reduce_buf, 3, MPI_LONG_LONG, parentRank, CIRCLE_TAG_REDUCE,
+                 comm);
 
         /* also send along user data if any, and if it is valid */
         if (bytes > 0 && reduce_buf[0] == MSG_VALID) {
           void *currbuf = parent->impl->reduce_buf;
-          MPI_Send(currbuf, bytes, MPI_BYTE, parentRank,
-                   CIRCLE_TAG_REDUCE, comm);
+          MPI_Send(currbuf, bytes, MPI_BYTE, parentRank, CIRCLE_TAG_REDUCE,
+                   comm);
         }
       } else {
         /* we're the root, print the results if we have valid data */
         if (reduce_buf[0] == MSG_VALID) {
-          LOG(LogLevel::Info, "Objects processed: %lld ...",
-              reduce_buf[1]);
+          LOG(LogLevel::Info, "Objects processed: %lld ...", reduce_buf[1]);
 
           /* invoke callback on root to deliver final result */
           if (parent->reduce_fini_cb != NULL) {
@@ -271,14 +270,13 @@ void State::reduceCheck(int count, int cleanup) {
         start_reduce = 1;
       } else {
         /* we're not the root, check whether parent sent us a message */
-        MPI_Iprobe(parentRank, CIRCLE_TAG_REDUCE, comm, &flag,
-                   &status);
+        MPI_Iprobe(parentRank, CIRCLE_TAG_REDUCE, comm, &flag, &status);
 
         /* kick off reduce if message came in */
         if (flag) {
           /* receive message from parent and set flag to start reduce */
-          MPI_Recv(NULL, 0, MPI_BYTE, parentRank, CIRCLE_TAG_REDUCE,
-                   comm, &status);
+          MPI_Recv(NULL, 0, MPI_BYTE, parentRank, CIRCLE_TAG_REDUCE, comm,
+                   &status);
           start_reduce = 1;
         }
       }
@@ -295,8 +293,8 @@ void State::reduceCheck(int count, int cleanup) {
        * if we have one */
       if (parentRank != MPI_PROC_NULL) {
         reduce_buf[0] = MSG_INVALID;
-        MPI_Send(reduce_buf, 3, MPI_LONG_LONG, parentRank,
-                 CIRCLE_TAG_REDUCE, comm);
+        MPI_Send(reduce_buf, 3, MPI_LONG_LONG, parentRank, CIRCLE_TAG_REDUCE,
+                 comm);
       }
     }
 
@@ -378,8 +376,7 @@ void State::reduceSync(int count) {
 
       /* receive data */
       int bytes = (int)recvbuf[2];
-      MPI_Recv(inbuf, bytes, MPI_BYTE, child, CIRCLE_TAG_REDUCE, comm,
-               &status);
+      MPI_Recv(inbuf, bytes, MPI_BYTE, child, CIRCLE_TAG_REDUCE, comm, &status);
     }
 
     /* invoke user's callback to reduce user data */
@@ -400,14 +397,12 @@ void State::reduceSync(int count) {
     reduce_buf[2] = (long long int)bytes;
 
     /* send partial result to parent */
-    MPI_Send(reduce_buf, 3, MPI_LONG_LONG, parentRank,
-             CIRCLE_TAG_REDUCE, comm);
+    MPI_Send(reduce_buf, 3, MPI_LONG_LONG, parentRank, CIRCLE_TAG_REDUCE, comm);
 
     /* also send along user data if any */
     if (bytes > 0) {
       void *currbuf = parent->impl->reduce_buf;
-      MPI_Send(currbuf, bytes, MPI_BYTE, parentRank, CIRCLE_TAG_REDUCE,
-               comm);
+      MPI_Send(currbuf, bytes, MPI_BYTE, parentRank, CIRCLE_TAG_REDUCE, comm);
     }
   } else {
     /* we're the root, print the results if we have valid data */
@@ -443,8 +438,7 @@ int State::barrierTest() {
   /* check whether we have received message from all children (if any) */
   if (barrier_replies < nchildren) {
     /* still waiting on barrier messages from our children */
-    MPI_Iprobe(MPI_ANY_SOURCE, CIRCLE_TAG_BARRIER, comm, &flag,
-               &status);
+    MPI_Iprobe(MPI_ANY_SOURCE, CIRCLE_TAG_BARRIER, comm, &flag, &status);
 
     /* if we got a message increase our count */
     if (flag) {
@@ -452,8 +446,7 @@ int State::barrierTest() {
       int child = status.MPI_SOURCE;
 
       /* receive message from that child */
-      MPI_Recv(NULL, 0, MPI_BYTE, child, CIRCLE_TAG_BARRIER, comm,
-               &status);
+      MPI_Recv(NULL, 0, MPI_BYTE, child, CIRCLE_TAG_BARRIER, comm, &status);
 
       /* increase count */
       barrier_replies++;
@@ -466,8 +459,7 @@ int State::barrierTest() {
   if (!barrier_up && barrier_replies == nchildren) {
     /* send a message to our parent if we have one */
     if (parentRank != MPI_PROC_NULL) {
-      MPI_Send(NULL, 0, MPI_BYTE, parentRank, CIRCLE_TAG_BARRIER,
-               comm);
+      MPI_Send(NULL, 0, MPI_BYTE, parentRank, CIRCLE_TAG_BARRIER, comm);
     }
 
     /* transition to state where we're waiting for parent
@@ -486,8 +478,8 @@ int State::barrierTest() {
 
       if (flag) {
         /* got a message, receive message */
-        MPI_Recv(NULL, 0, MPI_BYTE, parentRank, CIRCLE_TAG_BARRIER,
-                 comm, &status);
+        MPI_Recv(NULL, 0, MPI_BYTE, parentRank, CIRCLE_TAG_BARRIER, comm,
+                 &status);
 
         /* mark barrier as complete */
         complete = 1;
@@ -619,8 +611,7 @@ int State::checkForTermAllReduce() {
 
     /* receive message from that child */
     int child_flag;
-    MPI_Recv(&child_flag, 1, MPI_INT, child, CIRCLE_TAG_TERM, comm,
-             &status);
+    MPI_Recv(&child_flag, 1, MPI_INT, child, CIRCLE_TAG_TERM, comm, &status);
 
     /* AND child's flag value with ours */
     term_flag &= child_flag;
@@ -647,8 +638,7 @@ int State::checkForTermAllReduce() {
   if (!term_up && term_replies == nchildren) {
     /* send a message to our parent if we have one */
     if (parentRank != MPI_PROC_NULL) {
-      MPI_Send(&term_flag, 1, MPI_INT, parentRank, CIRCLE_TAG_TERM,
-               comm);
+      MPI_Send(&term_flag, 1, MPI_INT, parentRank, CIRCLE_TAG_TERM, comm);
     } else {
       /* we are root, capture result of allreduce */
       term_flag = term_flag;
@@ -675,8 +665,8 @@ int State::checkForTermAllReduce() {
 
       if (flag) {
         /* got a message, receive message */
-        MPI_Recv(&term_flag, 1, MPI_INT, parentRank, CIRCLE_TAG_TERM,
-                 comm, &status);
+        MPI_Recv(&term_flag, 1, MPI_INT, parentRank, CIRCLE_TAG_TERM, comm,
+                 &status);
 
         /* mark allreduce as complete */
         complete = 1;
@@ -734,8 +724,8 @@ void State::abortReduce() {
 
     /* receive message from child */
     int child_flag;
-    MPI_Recv(&child_flag, 1, MPI_INT, child, CIRCLE_TAG_ABORT_REDUCE,
-             comm, &status);
+    MPI_Recv(&child_flag, 1, MPI_INT, child, CIRCLE_TAG_ABORT_REDUCE, comm,
+             &status);
 
     /* OR child's flag value with ours */
     flag |= child_flag;
@@ -744,12 +734,11 @@ void State::abortReduce() {
   /* send a message to our parent and wait on reply if we have one */
   if (parentRank != MPI_PROC_NULL) {
     /* send partial result to parent */
-    MPI_Send(&flag, 1, MPI_INT, parentRank, CIRCLE_TAG_ABORT_REDUCE,
-             comm);
+    MPI_Send(&flag, 1, MPI_INT, parentRank, CIRCLE_TAG_ABORT_REDUCE, comm);
 
     /* wait for final result from parent */
-    MPI_Recv(&flag, 1, MPI_INT, parentRank, CIRCLE_TAG_ABORT_REDUCE,
-             comm, &status);
+    MPI_Recv(&flag, 1, MPI_INT, parentRank, CIRCLE_TAG_ABORT_REDUCE, comm,
+             &status);
   }
 
   /* forward result to children */
@@ -814,12 +803,12 @@ void State::abortStart(int cleanup) {
   /* send abort message to our parent if we have one */
   if (parentRank != MPI_PROC_NULL) {
     /* post a receive for the reply to our abort request message */
-    MPI_Irecv(NULL, 0, MPI_BYTE, parentRank, CIRCLE_TAG_ABORT_REPLY,
-              comm, &abort_req[k++]);
+    MPI_Irecv(NULL, 0, MPI_BYTE, parentRank, CIRCLE_TAG_ABORT_REPLY, comm,
+              &abort_req[k++]);
 
     /* post abort request to our parent */
-    MPI_Isend(NULL, 0, MPI_BYTE, parentRank, CIRCLE_TAG_ABORT_REQUEST,
-              comm, &abort_req[k++]);
+    MPI_Isend(NULL, 0, MPI_BYTE, parentRank, CIRCLE_TAG_ABORT_REQUEST, comm,
+              &abort_req[k++]);
   }
 
   /* send abort message to each of our children */
@@ -829,12 +818,12 @@ void State::abortStart(int cleanup) {
     int child_rank = childrenRanks[i];
 
     /* post a receive for the reply to our abort request message */
-    MPI_Irecv(NULL, 0, MPI_BYTE, child_rank, CIRCLE_TAG_ABORT_REPLY,
-              comm, &abort_req[k++]);
+    MPI_Irecv(NULL, 0, MPI_BYTE, child_rank, CIRCLE_TAG_ABORT_REPLY, comm,
+              &abort_req[k++]);
 
     /* post abort request to our child */
-    MPI_Isend(NULL, 0, MPI_BYTE, child_rank, CIRCLE_TAG_ABORT_REQUEST,
-              comm, &abort_req[k++]);
+    MPI_Isend(NULL, 0, MPI_BYTE, child_rank, CIRCLE_TAG_ABORT_REQUEST, comm,
+              &abort_req[k++]);
   }
 
   /* remember that we've sent our abort messages */
@@ -861,8 +850,7 @@ void State::abortCheck(int cleanup) {
    * from another process */
   int flag;
   MPI_Status status;
-  MPI_Iprobe(MPI_ANY_SOURCE, CIRCLE_TAG_ABORT_REQUEST, comm, &flag,
-             &status);
+  MPI_Iprobe(MPI_ANY_SOURCE, CIRCLE_TAG_ABORT_REQUEST, comm, &flag, &status);
 
   /* process abort request message if we got one */
   if (flag) {
@@ -870,8 +858,7 @@ void State::abortCheck(int cleanup) {
     int rank = status.MPI_SOURCE;
 
     /* receive the abort request message */
-    MPI_Recv(NULL, 0, MPI_BYTE, rank, CIRCLE_TAG_ABORT_REQUEST,
-             comm, &status);
+    MPI_Recv(NULL, 0, MPI_BYTE, rank, CIRCLE_TAG_ABORT_REQUEST, comm, &status);
 
     /* send an abort reply back */
     MPI_Send(NULL, 0, MPI_BYTE, rank, CIRCLE_TAG_ABORT_REPLY, comm);
@@ -902,8 +889,8 @@ void State::tokenIsSend() {
    * because this way the send won't complete until a matching
    * receive has been posted, which means as long as the send
    * is pending, the message is still on the wire */
-  MPI_Issend(&token_buf, 1, MPI_INT, token_dest,
-             CIRCLE_TAG_TOKEN, comm, &token_send_req);
+  MPI_Issend(&token_buf, 1, MPI_INT, token_dest, CIRCLE_TAG_TOKEN, comm,
+             &token_send_req);
 
   /* remember that we no longer have the token */
   token_is_local = 0;
@@ -1087,8 +1074,8 @@ int8_t State::extendOffsets(int32_t size) {
     count += 4096;
   }
 
-  LOG(LogLevel::Debug, "Extending offset arrays from %d to %d.",
-      offsets_count, count);
+  LOG(LogLevel::Debug, "Extending offset arrays from %d to %d.", offsets_count,
+      count);
 
   offsets_recv_buf =
       (int *)realloc(offsets_recv_buf, (size_t)count * sizeof(int));
@@ -1096,8 +1083,7 @@ int8_t State::extendOffsets(int32_t size) {
   offsets_send_buf =
       (int *)realloc(offsets_send_buf, (size_t)count * sizeof(int));
 
-  LOG(LogLevel::Debug, "Work offsets: [%p] -> [%p]",
-      (void *)offsets_recv_buf,
+  LOG(LogLevel::Debug, "Work offsets: [%p] -> [%p]", (void *)offsets_recv_buf,
       (void *)(offsets_recv_buf + ((size_t)count * sizeof(int))));
 
   LOG(LogLevel::Debug, "Request offsets: [%p] -> [%p]",
@@ -1133,8 +1119,8 @@ int32_t State::workReceive(Queue *qp, int source, int size) {
 
   /* Receive item count, character count, and offsets */
   MPI_Status status;
-  MPI_Recv(offsets_recv_buf, size, MPI_INT, source,
-           CIRCLE_TAG_WORK_REPLY, comm, &status);
+  MPI_Recv(offsets_recv_buf, size, MPI_INT, source, CIRCLE_TAG_WORK_REPLY, comm,
+           &status);
 
   /* the first int has number of items or an ABORT code */
   int items = offsets_recv_buf[0];
@@ -1168,8 +1154,8 @@ int32_t State::workReceive(Queue *qp, int source, int size) {
   }
 
   /* receive second message containing work elements */
-  MPI_Recv(&qp->base[0], chars, MPI_CHAR, source, CIRCLE_TAG_WORK_REPLY,
-           comm, MPI_STATUS_IGNORE);
+  MPI_Recv(&qp->base[0], chars, MPI_CHAR, source, CIRCLE_TAG_WORK_REPLY, comm,
+           MPI_STATUS_IGNORE);
 
   /* make sure we have a pointer allocated for each element */
   int32_t count = items;
@@ -1361,8 +1347,7 @@ int State::sendWork(Queue *qp, int dest, int32_t count) {
   int32_t current_elem = start_elem;
 
   for (i = 0; i < count; i++) {
-    offsets_send_buf[2 + i] =
-        (int)(qp->strings[current_elem] - start_offset);
+    offsets_send_buf[2 + i] = (int)(qp->strings[current_elem] - start_offset);
     current_elem++;
   }
 
@@ -1370,8 +1355,8 @@ int State::sendWork(Queue *qp, int dest, int32_t count) {
    * to not overwrite space in queue before sends complete */
 
   /* send item count, total bytes, and offsets of each item */
-  MPI_Send(offsets_send_buf, numoffsets, MPI_INT, dest,
-           CIRCLE_TAG_WORK_REPLY, comm);
+  MPI_Send(offsets_send_buf, numoffsets, MPI_INT, dest, CIRCLE_TAG_WORK_REPLY,
+           comm);
 
   /* send data */
   char *buf = &qp->base[0] + start_offset;
@@ -1454,8 +1439,7 @@ void State::workreceiptCheck(Queue *qp) {
     /* Test to see if we have any work receipt message to receive */
     int flag;
     MPI_Status status;
-    MPI_Iprobe(MPI_ANY_SOURCE, CIRCLE_TAG_WORK_RECEIPT, comm, &flag,
-               &status);
+    MPI_Iprobe(MPI_ANY_SOURCE, CIRCLE_TAG_WORK_RECEIPT, comm, &flag, &status);
 
     /* if we don't have any, break out of the loop */
     if (!flag) {
@@ -1466,8 +1450,7 @@ void State::workreceiptCheck(Queue *qp) {
     int rank = status.MPI_SOURCE;
 
     /* receive the message */
-    MPI_Recv(NULL, 0, MPI_BYTE, rank, CIRCLE_TAG_WORK_RECEIPT, comm,
-             &status);
+    MPI_Recv(NULL, 0, MPI_BYTE, rank, CIRCLE_TAG_WORK_RECEIPT, comm, &status);
 
     /* decrement our count of outstanding work messages */
     work_outstanding--;
@@ -1491,8 +1474,7 @@ void State::workreqCheck(Queue *qp, int cleanup) {
     /* Test for any work request message */
     int flag;
     MPI_Status status;
-    MPI_Iprobe(MPI_ANY_SOURCE, CIRCLE_TAG_WORK_REQUEST, comm, &flag,
-               &status);
+    MPI_Iprobe(MPI_ANY_SOURCE, CIRCLE_TAG_WORK_REQUEST, comm, &flag, &status);
 
     /* if we don't have any, break out of the loop */
     if (!flag) {
@@ -1503,8 +1485,7 @@ void State::workreqCheck(Queue *qp, int cleanup) {
     int rank = status.MPI_SOURCE;
 
     /* receive the message */
-    MPI_Recv(NULL, 0, MPI_BYTE, rank, CIRCLE_TAG_WORK_REQUEST, comm,
-             &status);
+    MPI_Recv(NULL, 0, MPI_BYTE, rank, CIRCLE_TAG_WORK_REQUEST, comm, &status);
 
     /* add rank to requestor list */
     LOG(LogLevel::Debug, "Received work request from %d", rank);
@@ -1542,5 +1523,233 @@ void State::printOffsets(uint32_t *offsets, int32_t count) {
   for (i = 0; i < count; i++) {
     LOG(LogLevel::Debug, "\t[%d] %d", i, offsets[i]);
   }
+}
+
+/**
+ * @brief Function that actually does work, calls user callback.
+ *
+ * This is the main body of execution.
+ *
+ * - For every work loop execution, the following happens:
+ *     -# Check for work requests from other ranks.
+ *     -# If this rank doesn't have work, ask a random rank for work.
+ *     -# If this rank has work, call the user callback function.
+ *     -# If after requesting work, this rank still doesn't have any,
+ *        check for termination conditions.
+ */
+void State::mainLoop() {
+  int cleanup = 0;
+
+  /* Loop until done, we break on normal termination or abort */
+  while (1) {
+    /* Check for and service work requests */
+    workreqCheck(parent->impl->queue, cleanup);
+
+    /* process any incoming work receipt messages */
+    workreceiptCheck(parent->impl->queue);
+
+    /* check for incoming abort messages */
+    abortCheck(cleanup);
+
+    /* Make progress on any outstanding reduction */
+    if (reduce_enabled) {
+      reduceCheck(local_objects_processed, cleanup);
+    }
+
+    /* If I have no work, request work from another rank */
+    if (parent->impl->queue->count == 0) {
+      requestWork(parent->impl->queue, cleanup);
+    }
+
+    /* If I have some work and have not received a signal to
+     * abort, process one work item */
+    if (parent->impl->queue->count > 0 && !ABORT_FLAG) {
+      (*(parent->process_cb))(parent);
+      local_objects_processed++;
+    }
+    /* If I don't have work, or if I received signal to abort,
+     * check for termination */
+    else {
+      /* check whether we have terminated */
+      int term_status;
+      if (term_tree_enabled) {
+        term_status = checkForTermAllReduce();
+      } else {
+        term_status = checkForTerm();
+      }
+
+      if (term_status == TERMINATE) {
+        /* got the terminate signal, break the loop */
+        LOG(LogLevel::Debug, "Received termination signal.");
+        break;
+      }
+    }
+  }
+
+  /* We get here either because all procs have completed all work,
+   * or we got an ABORT message. */
+
+  /* We need to be sure that all sent messages have been received
+   * before returning control to the user, so that if the caller
+   * invokes libcirlce again, no messages from this invocation
+   * interfere with messages from the next.  Since receivers do not
+   * know wether a message is coming to them, a sender records whether
+   * it has a message outstanding.  When a receiver gets a message,
+   * it acknowledges receipt by sending a reply back to the sender,
+   * and at that point, the sender knows its message is no longer
+   * outstanding.  All processes continue to receive and reply to
+   * incoming messages until all senders have declared that they
+   * have no more outstanding messages. */
+
+  /* To get here when using the termination allreduce, we can be sure
+   * that there is both no outstanding work transfer message for this
+   * process nor any additional termination allreduce messages to
+   * cleanup.  This was not immediately obvious, so here is a proof
+   * to convince myself:
+   *
+   * Assumptions (requirements):
+   * a) A process only makes progress on the current termination
+   *    reduction when its queue is empty or it is in abort state.
+   * b) If a process is in abort state, it does not transfer work.
+   * c) If a process transferred work at any point before sending
+   *    to its parent, it will force a new reduction iteration after
+   *    the work has been transferred to the new process by setting
+   *    its reduction flag to 0.
+   *
+   * Question:
+   * - Can a process have an outstanding work transfer at the point
+   *   it receives 1 from the termination allreduce?
+   *
+   * Answer: No (why?)
+   * In order to send to its parent, this process (X) must have an
+   * empty queue or is in the abort state.  If it transferred data
+   * before calling the reduction, it would set its flag=0 and
+   * force a new reduction iteration.  So to get a 1 from the
+   * reduction it must not have transferred data before sending to
+   * its parent.  If the process was is abort state, it cannot have
+   * transferred work after sending to its parent, so it can only be
+   * that its queue must have been empty, then it sent flag=1 to its
+   * parent, and then transferred work.
+   *
+   * For its queue to have been empty and then for it to have
+   * transferred work later, it must have received work items from
+   * another process (Y).  If that sending process (Y) was from a
+   * process yet to contribute its flag to the allreduce, the current
+   * iteration would return 0, so it must be from a process that had
+   * already contributed a 1.  For that process (Y) to have sent 1 to
+   * its own parent, it must have an empty queue or be in the abort
+   * state.  If it was in abort state, it could not have transferred
+   * work, so it must have had an empty queue, meaning that it must
+   * have acquired the work items from another process (Z) and
+   * process Z cannot be either process X or Y.
+   *
+   * We can apply this logic recursively until we rule out all
+   * processes in the tree, i.e., no process yet to send to its
+   * parent and no process that has already sent a 1 to its parent,
+   * and of course if any process had sent 0 to its parent, then
+   * the allreduce will not return 1 on that iteration.
+   *
+   * Thus, there is no need to cleanup work transfer or termination
+   * allreduce messages at this point. */
+
+  cleanup = 1;
+
+  /* clear up any MPI messages that may still be outstanding */
+  while (1) {
+    /* start a non-blocking barrier once we have no outstanding
+     * items */
+    if (!work_requested && !reduce_outstanding && !abort_outstanding &&
+        token_send_req == MPI_REQUEST_NULL) {
+      barrierStart();
+    }
+
+    /* break the loop when the non-blocking barrier completes */
+    if (barrierTest()) {
+      break;
+    }
+
+    /* send no work message for any work request that comes in */
+    workreqCheck(parent->impl->queue, cleanup);
+
+    /* cleanup any outstanding reduction */
+    if (reduce_enabled) {
+      reduceCheck(local_objects_processed, cleanup);
+    }
+
+    /* receive any incoming work reply messages */
+    requestWork(parent->impl->queue, cleanup);
+
+    /* drain any outstanding abort messages */
+    abortCheck(cleanup);
+
+    /* if we're using circle-based token passing, drain any
+     * messages still outstanding */
+    if (!term_tree_enabled) {
+      /* check for and receive any incoming token */
+      tokenCheck();
+
+      /* if we have an outstanding token, check whether it's been received */
+      if (token_send_req != MPI_REQUEST_NULL) {
+        int flag;
+        MPI_Status status;
+        MPI_Test(&token_send_req, &flag, &status);
+      }
+    }
+  }
+
+  /* execute final, synchronous reduction if enabled, this ensures
+   * that we fire at least one reduce and one with the final result */
+  if (reduce_enabled) {
+    reduceSync(local_objects_processed);
+  }
+
+  /* if any process is in the abort state,
+   * set all to be in the abort state */
+  abortReduce();
+}
+
+void State::printSummary() {
+  /* allocate memory for summary data */
+  size_t array_elems = (size_t)size;
+  uint32_t *total_objects_processed_array =
+      (uint32_t *)calloc(array_elems, sizeof(uint32_t));
+  uint32_t *total_work_requests_array =
+      (uint32_t *)calloc(array_elems, sizeof(uint32_t));
+  uint32_t *total_no_work_received_array =
+      (uint32_t *)calloc(array_elems, sizeof(uint32_t));
+
+  /* gather and reduce summary info */
+  MPI_Gather(&local_objects_processed, 1, MPI_INT,
+             &total_objects_processed_array[0], 1, MPI_INT, 0, comm);
+  MPI_Gather(&local_work_requested, 1, MPI_INT,
+             &total_work_requests_array[0], 1, MPI_INT, 0, comm);
+  MPI_Gather(&local_no_work_received, 1, MPI_INT,
+             &total_no_work_received_array[0], 1, MPI_INT, 0, comm);
+
+  int total_objects_processed = 0;
+  MPI_Reduce(&local_objects_processed, &total_objects_processed, 1,
+             MPI_INT, MPI_SUM, 0, comm);
+
+  /* print summary from rank 0 */
+  if (rank == 0) {
+    int i;
+    for (i = 0; i < size; i++) {
+      LOG(LogLevel::Info, "Rank %d\tObjects Processed %d\t%0.3lf%%", i,
+          total_objects_processed_array[i],
+          (double)total_objects_processed_array[i] /
+              (double)total_objects_processed * 100.0);
+      LOG(LogLevel::Info, "Rank %d\tWork requests: %d", i,
+          total_work_requests_array[i]);
+      LOG(LogLevel::Info, "Rank %d\tNo work replies: %d", i,
+          total_no_work_received_array[i]);
+    }
+
+    LOG(LogLevel::Info, "Total Objects Processed: %d", total_objects_processed);
+  }
+
+  /* free memory */
+  free(&total_no_work_received_array);
+  free(&total_work_requests_array);
+  free(&total_objects_processed_array);
 }
 

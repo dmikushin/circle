@@ -13,20 +13,6 @@ namespace internal {
 class Worker {
   Circle* parent;
 
-  /**
-   * @brief Function that actually does work, calls user callback.
-   *
-   * This is the main body of execution.
-   *
-   * - For every work loop execution, the following happens:
-   *     -# Check for work requests from other ranks.
-   *     -# If this rank doesn't have work, ask a random rank for work.
-   *     -# If this rank has work, call the user callback function.
-   *     -# If after requesting work, this rank still doesn't have any,
-   *        check for termination conditions.
-   */
-  void mainLoop(State *sptr);
-
 public :
 
   Worker(Circle* parent);
