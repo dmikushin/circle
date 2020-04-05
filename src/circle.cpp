@@ -4,7 +4,7 @@
 #include <sigsegv.h>
 
 #include "lanl_circle.hpp"
-#include "circle_impl.hpp"
+#include "circle.hpp"
 #include "log.hpp"
 #include "token.hpp"
 

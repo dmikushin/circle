@@ -2,7 +2,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#include "circle_impl.hpp"
+#include "circle.hpp"
 #include "lanl_circle.hpp"
 #include "log.hpp"
 #include "queue.hpp"
