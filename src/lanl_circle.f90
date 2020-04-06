@@ -25,7 +25,7 @@ end enum
 
 type, public :: circle
 
-  integer, private :: root, comm, comm_index
+  type(c_ptr) :: handle
   
 contains
 
@@ -60,9 +60,25 @@ subroutine circle_create_simple(this, create_callback, circle_process_callback, 
 use iso_c_binding
 implicit none
 
+interface
+
+function create_simple_c_api(create_callback, circle_process_callback, &
+  runtime_flags) bind(C, name = 'circle_create_simple')
+use iso_c_binding
+implicit none
+type(c_funptr), intent(in), value :: create_callback, circle_process_callback
+integer(c_int), intent(in), value :: runtime_flags
+type(c_ptr) :: create_simple_c_api
+end function create_simple_c_api
+
+end interface
+
 class(circle), intent(out) :: this
 type(c_funptr), intent(in) :: create_callback, circle_process_callback
 integer, intent(in) :: runtime_flags
+
+this%handle = create_simple_c_api(create_callback, circle_process_callback, &
+  runtime_flags)
 
 end subroutine circle_create_simple
 
@@ -75,19 +91,54 @@ subroutine circle_create(this, create_callback, circle_process_callback, &
 use iso_c_binding
 implicit none
 
+interface
+
+function create_c_api(create_callback, circle_process_callback, &
+  circle_reduce_init_callback, circle_reduce_operation_callback, circle_reduce_finalize_callback, &
+  runtime_flags) bind(C, name = 'circle_create')
+use iso_c_binding
+implicit none
+type(c_funptr), intent(in), value :: create_callback, circle_process_callback
+type(c_funptr), intent(in), value :: circle_reduce_init_callback, circle_reduce_operation_callback, circle_reduce_finalize_callback
+integer(c_int), intent(in), value :: runtime_flags
+type(c_ptr) :: create_c_api
+end function create_c_api
+
+end interface
+
 class(circle), intent(out) :: this
 type(c_funptr), intent(in) :: create_callback, circle_process_callback
 type(c_funptr), intent(in) :: circle_reduce_init_callback, circle_reduce_operation_callback, circle_reduce_finalize_callback
 integer(c_int), intent(in) :: runtime_flags
 
+this%handle = create_c_api(create_callback, circle_process_callback, &
+  circle_reduce_init_callback, circle_reduce_operation_callback, circle_reduce_finalize_callback, &
+  runtime_flags)
+
 end subroutine circle_create
 
+!
+!
+!
 function circle_get_log_level(this)
 use iso_c_binding
 implicit none
 
+interface
+
+function get_log_level_c_api(handle) bind(C, name = 'circle_get_log_level')
+use iso_c_binding
+implicit none
+type(c_ptr), value :: handle
+integer(c_int) :: get_log_level_c_api
+end function get_log_level_c_api
+
+end interface
+
 class(circle), intent(in) :: this
 integer(c_int) :: circle_get_log_level
+
+circle_get_log_level = get_log_level_c_api(this%handle)
 
 end function circle_get_log_level
 
@@ -98,17 +149,46 @@ subroutine circle_set_log_level(this, level)
 use iso_c_binding
 implicit none
 
+interface
+
+subroutine set_log_level_c_api(handle, level) bind(C, name = 'circle_set_log_level')
+use iso_c_binding
+implicit none
+type(c_ptr), value :: handle
+integer(c_int), intent(in), value :: level
+end subroutine set_log_level_c_api
+
+end interface
+
 class(circle), intent(in) :: this
 integer(c_int), intent(in) :: level
 
+call set_log_level_c_api(this%handle, level)
+
 end subroutine circle_set_log_level
 
+!
+!
+!
 function circle_get_runtime_flags(this)
 use iso_c_binding
 implicit none
 
+interface
+
+function get_runtime_flags_c_api(handle) bind(C, name = 'circle_get_runtime_flags')
+use iso_c_binding
+implicit none
+type(c_ptr), value :: handle
+integer(c_int) :: get_runtime_flags_c_api
+end function get_runtime_flags_c_api
+
+end interface
+
 class(circle), intent(in) :: this
 integer(c_int) :: circle_get_runtime_flags
+
+circle_get_runtime_flags = get_runtime_flags_c_api(this%handle)
 
 end function circle_get_runtime_flags
 
@@ -119,17 +199,46 @@ subroutine circle_set_runtime_flags(this, options)
 use iso_c_binding
 implicit none
 
+interface
+
+subroutine set_runtime_flags_c_api(handle, options) bind(C, name = 'circle_set_runtime_flags')
+use iso_c_binding
+implicit none
+type(c_ptr), value :: handle
+integer(c_int), intent(in), value :: options
+end subroutine set_runtime_flags_c_api
+
+end interface
+
 class(circle), intent(in) :: this
 integer(c_int), intent(in) :: options
 
+call set_runtime_flags_c_api(this%handle, options)
+
 end subroutine circle_set_runtime_flags
 
+!
+!
+!
 function circle_get_tree_width(this)
 use iso_c_binding
 implicit none
 
+interface
+
+function get_tree_width_c_api(handle) bind(C, name = 'circle_get_tree_width')
+use iso_c_binding
+implicit none
+type(c_ptr), value :: handle
+integer(c_int) :: get_tree_width_c_api
+end function get_tree_width_c_api
+
+end interface
+
 class(circle), intent(in) :: this
 integer(c_int) :: circle_get_tree_width
+
+circle_get_tree_width = get_tree_width_c_api(this%handle)
 
 end function circle_get_tree_width
 
@@ -140,17 +249,46 @@ subroutine circle_set_tree_width(this, width)
 use iso_c_binding
 implicit none
 
+interface
+
+subroutine set_tree_width_c_api(handle, width) bind(C, name = 'circle_set_tree_width')
+use iso_c_binding
+implicit none
+type(c_ptr), value :: handle
+integer(c_int), intent(in), value :: width
+end subroutine set_tree_width_c_api
+
+end interface
+
 class(circle), intent(in) :: this
 integer(c_int), intent(in) :: width
 
+call set_tree_width_c_api(this%handle, width)
+
 end subroutine circle_set_tree_width
 
+!
+!
+!
 function circle_get_reduce_period(this)
 use iso_c_binding
 implicit none
 
+interface
+
+function get_reduce_period_c_api(handle) bind(C, name = 'circle_get_reduce_period')
+use iso_c_binding
+implicit none
+type(c_ptr), value :: handle
+integer(c_int) :: get_reduce_period_c_api
+end function get_reduce_period_c_api
+
+end interface
+
 class(circle), intent(in) :: this
 integer(c_int) :: circle_get_reduce_period
+
+circle_get_reduce_period = get_reduce_period_c_api(this%handle)
 
 end function circle_get_reduce_period
 
@@ -161,8 +299,21 @@ subroutine circle_set_reduce_period(this, secs)
 use iso_c_binding
 implicit none
 
+interface
+
+subroutine set_reduce_period_c_api(handle, secs) bind(C, name = 'circle_set_reduce_period')
+use iso_c_binding
+implicit none
+type(c_ptr), value :: handle
+integer(c_int), intent(in), value :: secs
+end subroutine set_reduce_period_c_api
+
+end interface
+
 class(circle), intent(in) :: this
 integer(c_int), intent(in) :: secs
+
+call set_reduce_period_c_api(this%handle, secs)
 
 end subroutine circle_set_reduce_period
 
@@ -173,18 +324,48 @@ function circle_get_rank(this)
 use iso_c_binding
 implicit none
 
+interface
+
+function get_rank_c_api(handle) bind(C, name = 'circle_get_rank')
+use iso_c_binding
+implicit none
+type(c_ptr), value :: handle
+integer(c_int) :: get_rank_c_api
+end function get_rank_c_api
+
+end interface
+
 class(circle), intent(in) :: this
 integer(c_int) :: circle_get_rank
 
+circle_get_rank = get_rank_c_api(this%handle)
+
 end function circle_get_rank
 
+!
+!
+!
 subroutine circle_reduce(this, buf, size)
 use iso_c_binding
 implicit none
 
+interface
+
+subroutine reduce_c_api(handle, buf, size) bind(C, name = 'circle_reduce')
+use iso_c_binding
+implicit none
+type(c_ptr), value :: handle
+type(c_ptr), intent(in), value :: buf
+integer(c_size_t), intent(in), value :: size
+end subroutine reduce_c_api
+
+end interface
+
 class(circle), intent(in) :: this
 type(c_ptr), intent(inout) :: buf
 integer(c_size_t), intent(in) :: size
+
+call reduce_c_api(this%handle, buf, size)
 
 end subroutine circle_reduce
 
@@ -196,7 +377,19 @@ subroutine circle_execute(this)
 use iso_c_binding
 implicit none
 
+interface
+
+subroutine execute_c_api(handle) bind(C, name = 'circle_execute')
+use iso_c_binding
+implicit none
+type(c_ptr), value :: handle
+end subroutine execute_c_api
+
+end interface
+
 class(circle), intent(in) :: this
+
+call execute_c_api(this%handle)
 
 end subroutine circle_execute
 
@@ -207,7 +400,19 @@ subroutine circle_abort(this)
 use iso_c_binding
 implicit none
 
+interface
+
+subroutine abort_c_api(handle) bind(C, name = 'circle_abort')
+use iso_c_binding
+implicit none
+type(c_ptr), value :: handle
+end subroutine abort_c_api
+
+end interface
+
 class(circle), intent(in) :: this
+
+call abort_c_api(this%handle) 
 
 end subroutine circle_abort
 
@@ -218,8 +423,21 @@ function circle_read_restarts(this)
 use iso_c_binding
 implicit none
 
+interface
+
+function read_restarts_c_api(handle) bind(C, name = 'circle_read_restarts')
+use iso_c_binding
+implicit none
+type(c_ptr), value :: handle
+integer(c_int) :: read_restarts_c_api
+end function read_restarts_c_api
+
+end interface
+
 class(circle), intent(in) :: this
 integer(c_int) :: circle_read_restarts
+
+circle_read_restarts = read_restarts_c_api(this%handle)
 
 end function circle_read_restarts
 
@@ -231,8 +449,21 @@ function circle_checkpoint(this)
 use iso_c_binding
 implicit none
 
+interface
+
+function checkpoint_c_api(handle) bind(C, name = 'circle_checkpoint')
+use iso_c_binding
+implicit none
+type(c_ptr), value :: handle
+integer(c_int) :: checkpoint_c_api
+end function checkpoint_c_api
+
+end interface
+
 class(circle), intent(in) :: this
 integer(c_int) :: circle_checkpoint
+
+circle_checkpoint = checkpoint_c_api(this%handle)
 
 end function circle_checkpoint
 
@@ -244,30 +475,79 @@ function circle_enqueue(this, element, szelement)
 use iso_c_binding
 implicit none
 
+interface
+
+function circle_enqueue_c_api(handle, element, szelement) bind(C, name = 'circle_enqueue')
+use iso_c_binding
+implicit none
+type(c_ptr), value :: handle
+type(c_ptr), intent(in), value :: element
+integer(c_size_t), intent(in) :: szelement
+integer(c_int) :: circle_enqueue_c_api
+end function circle_enqueue_c_api
+
+end interface
+
 class(circle), intent(in) :: this
 type(c_ptr), intent(in) :: element
 integer(c_size_t), intent(in) :: szelement
 integer(c_int) :: circle_enqueue
 
+circle_enqueue = circle_enqueue_c_api(this%handle, element, szelement)
+
 end function circle_enqueue
 
+!
+!
+!
 function circle_dequeue(this, element, szelement)
 use iso_c_binding
 implicit none
 
+interface
+
+function circle_dequeue_c_api(handle, element, szelement) bind(C, name = 'circle_dequeue')
+use iso_c_binding
+implicit none
+type(c_ptr), value :: handle
+type(c_ptr), intent(in), value :: element
+integer(c_size_t), intent(out) :: szelement
+integer(c_int) :: circle_dequeue_c_api
+end function circle_dequeue_c_api
+
+end interface
+
 class(circle), intent(in) :: this
-type(c_ptr), intent(out) :: element
+type(c_ptr), intent(in) :: element
 integer(c_size_t), intent(out) :: szelement
 integer(c_int) :: circle_dequeue
 
+circle_dequeue = circle_dequeue_c_api(this%handle, element, szelement)
+
 end function circle_dequeue
 
+!
+!
+!
 function circle_get_local_queue_size(this)
 use iso_c_binding
 implicit none
 
+interface
+
+function get_local_queue_size_c_api(handle) bind(C, name = 'circle_get_local_queue_size')
+use iso_c_binding
+implicit none
+type(c_ptr), value :: handle
+integer(c_int) :: get_local_queue_size_c_api
+end function get_local_queue_size_c_api
+
+end interface
+
 class(circle), intent(in) :: this
 integer(c_int) :: circle_get_local_queue_size
+
+circle_get_local_queue_size = get_local_queue_size_c_api(this%handle)
 
 end function circle_get_local_queue_size
 
@@ -281,6 +561,8 @@ implicit none
 
 integer(c_int) :: circle_init
 
+! TODO
+
 end function circle_init
 
 !
@@ -290,9 +572,23 @@ function circle_wtime()
 use iso_c_binding
 implicit none
 
+interface
+
+function wtime_c_api() bind(C, name = 'circle_wtime')
+use iso_c_binding
+implicit none
+real(8) :: wtime_c_api
+end function wtime_c_api
+
+end interface
+
 real(8) :: circle_wtime
 
+circle_wtime = wtime_c_api()
+
 end function circle_wtime
+
+
 
 end module lanl_circle
 
