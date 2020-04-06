@@ -417,6 +417,8 @@ int8_t Circle::readRestarts() { return impl->readRestarts(); }
  */
 int8_t Circle::checkpoint() { return impl->checkpoint(); }
 
+CircleImpl *Circle::getImpl() { return impl; }
+
 /**
  * Call this function to read in libcircle restart files.
  */

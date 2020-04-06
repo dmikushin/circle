@@ -179,14 +179,29 @@ int8_t Queue::pop(std::vector<uint8_t> &content) {
   }
 
   /* Copy last element into str */
-  uintptr_t current = strings[count - 1];
-  size_t len = head - current;
+  auto current = strings[count - 1];
+  auto len = head - current;
   content.resize(len);
-  memcpy(reinterpret_cast<uint8_t *>(&content[0]), &base[0] + current, len);
+  std::copy(base.begin() + current, base.begin() + current + len, content.begin());
   head = current;
   count--;
 
   return 0;
+}
+
+/**
+ * Get the size of last queue item without removing it.
+ */
+size_t Queue::lastSize() {
+  if (count < 1) {
+    LOG(LogLevel::Debug, "Attempted to get last element size from an empty queue->");
+    return -1;
+  }
+
+  auto current = strings[count - 1];
+  auto len = head - current;
+
+  return len;
 }
 
 int8_t Queue::pop(std::string &element) {

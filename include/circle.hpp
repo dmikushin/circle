@@ -84,6 +84,7 @@ public:
   int8_t checkpoint();
 
   friend class circle::Circle;
+  friend int circle_dequeue(Circle *circle, uint8_t *element, size_t *szelement);
 };
 
 } // namespace internal

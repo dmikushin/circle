@@ -48,6 +48,14 @@ typedef void (*circle_reduce_finalize_callback_func)(Circle *circle,
                                                      size_t size);
 
 /**
+ * Initialize a Circle instance for parallel processing.
+ */
+Circle circle_create_simple(
+    circle_callback_func create_callback,
+    circle_callback_func circle_process_callback,
+    CircleRuntimeFlags runtime_flags);
+
+/**
  * Initialize a Circle instance for parallel processing and reduction.
  */
 Circle circle_create(

@@ -188,6 +188,8 @@ public:
 
   uint32_t getLocalQueueSize();
 
+  circle::internal::CircleImpl *getImpl();
+
   friend class circle::internal::CircleImpl;
 };
 

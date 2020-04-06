@@ -42,6 +42,11 @@ public:
   int8_t pop(std::vector<uint8_t> &content);
   int8_t pop(std::string &content);
 
+  /**
+   * Get the size of last queue item without removing it.
+   */
+  size_t lastSize();
+
   void dump();
   void print();
 

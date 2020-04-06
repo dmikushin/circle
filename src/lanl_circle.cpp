@@ -1,5 +1,22 @@
 #include "lanl_circle.h"
 #include "lanl_circle.hpp"
+#include "circle.hpp"
+
+#include <string.h>
+
+/**
+ * Initialize a Circle instance for parallel processing.
+ */
+Circle circle_create_simple(
+    circle_callback_func create_callback,
+    circle_callback_func circle_process_callback,
+    CircleRuntimeFlags runtime_flags) {
+  circle::Circle *circle = new circle::Circle(
+      (circle::CallbackFunc)create_callback,
+      (circle::CallbackFunc)circle_process_callback,
+      (circle::RuntimeFlags)runtime_flags);
+  return (Circle)circle;
+}
 
 /**
  * Initialize a Circle instance for parallel processing and reduction.
@@ -124,9 +141,34 @@ int circle_enqueue(Circle circle, const uint8_t *element, size_t szelement) {
   return reinterpret_cast<circle::Circle *>(circle)->enqueue(content);
 }
 
-int circle_dequeue(Circle circle, uint8_t *element, size_t *szelement) {
-  // TODO Use back() to get the size only
+namespace circle {
+namespace internal {
+
+int circle_dequeue(circle::Circle *circle, uint8_t *element, size_t *szelement) {
+  if (!element && !szelement)
+    return -1;
+
+  if (!element && szelement) {
+    *szelement = circle->getImpl()->queue->lastSize();
+    return 0;
+  }
+
+  std::vector<uint8_t> content;
+  circle->dequeue(content);
+  memcpy(element, reinterpret_cast<uint8_t*>(&content[0]), content.size());
+
+  if (szelement)
+    *szelement = content.size();
+
   return 0;
+}
+
+} // namespace internal
+} // namespace circle
+
+int circle_dequeue(Circle circle, uint8_t *element, size_t *szelement) {
+  return circle::internal::circle_dequeue(
+    reinterpret_cast<circle::Circle *>(circle), element, szelement);
 }
 
 uint32_t circle_get_local_queue_size(Circle circle) {
