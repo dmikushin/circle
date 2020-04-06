@@ -13,18 +13,17 @@ extern "C" {
  * Run time flags for the behavior of splitting work.
  */
 enum CircleRuntimeFlags {
-  None = 0,
-  SplitRandom = 1 << 0,      /* Split work randomly. */
-  SplitEqual = 1 << 1,       /* Split work evenly */
-  CreateGlobal = 1 << 2,     /* Call create callback on all procs */
-  TermTree = 1 << 3,         /* Use tree-based termination */
-  DefaultFlags = SplitEqual, /* Default behavior is random work stealing */
+  CircleSplitRandom = 1 << 0,      /* Split work randomly. */
+  CircleSplitEqual = 1 << 1,       /* Split work evenly */
+  CircleCreateGlobal = 1 << 2,     /* Call create callback on all procs */
+  CircleTermTree = 1 << 3,         /* Use tree-based termination */
+  CircleDefaultFlags = CircleSplitEqual, /* Default behavior is random work stealing */
 };
 
 /**
  * The various logging levels that Circle will output.
  */
-enum CircleLogLevel { Fatal = 1, Error = 2, Warning = 3, Info = 4, Debug = 5 };
+enum CircleLogLevel { CircleNone = 0, CircleFatal = 1, CircleError = 2, CircleWarning = 3, CircleInfo = 4, CircleDebug = 5 };
 
 typedef struct _circle *Circle;
 
