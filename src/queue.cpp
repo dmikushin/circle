@@ -246,10 +246,10 @@ int8_t Queue::read(int rank) {
   while (std::getline(checkpoint_file, str)) {
     std::vector<uint8_t> content(str.begin(), str.end());
     if (push(content) < 0) {
-      LOG(LogLevel::Error, "Failed to push element on queue \"%s\"", str);
+      LOG(LogLevel::Error, "Failed to push element on queue \"%s\"", str.c_str());
     }
 
-    LOG(LogLevel::Debug, "Pushed %s onto queue->", str);
+    LOG(LogLevel::Debug, "Pushed %s onto queue->", str.c_str());
   }
 
   checkpoint_file.close();
