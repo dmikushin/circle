@@ -30,19 +30,19 @@ typedef struct _circle *Circle;
 /**
  * The type for defining callbacks for create and process.
  */
-typedef void (*circle_callback_func)(Circle *circle);
+typedef void (*circle_callback_func)(Circle circle);
 
 /**
  * Callbacks for initializing, executing, and obtaining final result
  * of a reduction
  */
-typedef void (*circle_reduce_init_callback_func)(Circle *circle);
-typedef void (*circle_reduce_operation_callback_func)(Circle *circle,
+typedef void (*circle_reduce_init_callback_func)(Circle circle);
+typedef void (*circle_reduce_operation_callback_func)(Circle circle,
                                                       const void *buf1,
                                                       size_t size1,
                                                       const void *buf2,
                                                       size_t size2);
-typedef void (*circle_reduce_finalize_callback_func)(Circle *circle,
+typedef void (*circle_reduce_finalize_callback_func)(Circle circle,
                                                      const void *buf,
                                                      size_t size);
 
