@@ -6,7 +6,7 @@ use iso_c_binding
 use lanl_circle
 implicit none
 
-integer, parameter :: npoints = 10000, njobs = 10
+integer, parameter :: npoints = 100000, njobs = 10
 real(8), target :: pi_partial
 integer :: err
 type(c_ptr) :: example
@@ -124,7 +124,7 @@ implicit none
   !
 
   ! get result of reduction
-  print *, "result = ", pi_total / njobs
+  print *, "result = ", pi_total * 4 / njobs
 end subroutine
 
 ! An example of a create callback defined by your program
@@ -193,7 +193,7 @@ implicit none
     endif
   enddo
 
-  pi_partial = dble(npoints) / ncircle
+  pi_partial = dble(ncircle) / npoints 
 end subroutine
 
 end program
