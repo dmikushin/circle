@@ -23,14 +23,12 @@ enum, bind(C) ! CircleLogLevel
   enumerator :: CircleNone = 0, CircleFatal = 1, CircleError = 2, CircleWarning = 3, CircleInfo = 4, CircleDebug = 5
 end enum
 
-type, public :: circle
+type, public, bind(C) :: circle
 
   type(c_ptr) :: handle
   
 contains
 
-  procedure, pass :: create_simple => circle_create_simple
-  procedure, pass :: create => circle_create
   procedure, pass :: get_log_level => circle_get_log_level
   procedure, pass :: set_log_level => circle_set_log_level
   procedure, pass :: get_runtime_flags => circle_get_runtime_flags
@@ -51,6 +49,13 @@ contains
 
 end type circle
 
+abstract interface
+  subroutine circle_callback(this) bind(C)
+  import circle
+  type(circle), intent(in) :: this
+  end subroutine circle_callback
+end interface
+
 contains
 
 !
@@ -66,7 +71,7 @@ function create_simple_c_api(create_callback, circle_process_callback, &
   runtime_flags) bind(C, name = 'circle_create_simple')
 use iso_c_binding
 implicit none
-type(c_funptr), intent(in), value :: create_callback, circle_process_callback
+procedure(circle_callback) :: create_callback, circle_process_callback
 integer(c_int), intent(in), value :: runtime_flags
 type(c_ptr) :: create_simple_c_api
 end function create_simple_c_api
@@ -74,7 +79,7 @@ end function create_simple_c_api
 end interface
 
 class(circle), intent(out) :: this
-type(c_funptr), intent(in) :: create_callback, circle_process_callback
+procedure(circle_callback) :: create_callback, circle_process_callback
 integer, intent(in) :: runtime_flags
 
 this%handle = create_simple_c_api(create_callback, circle_process_callback, &
@@ -107,8 +112,8 @@ end function create_c_api
 end interface
 
 class(circle), intent(out) :: this
-type(c_funptr), intent(in) :: create_callback, circle_process_callback
-type(c_funptr), intent(in) :: circle_reduce_init_callback, circle_reduce_operation_callback, circle_reduce_finalize_callback
+type(c_funptr), intent(in), value :: create_callback, circle_process_callback
+type(c_funptr), intent(in), value :: circle_reduce_init_callback, circle_reduce_operation_callback, circle_reduce_finalize_callback
 integer(c_int), intent(in) :: runtime_flags
 
 this%handle = create_c_api(create_callback, circle_process_callback, &
@@ -345,27 +350,27 @@ end function circle_get_rank
 !
 !
 !
-subroutine circle_reduce(this, buf, size)
+subroutine circle_reduce(this, buf, szbuf)
 use iso_c_binding
 implicit none
 
 interface
 
-subroutine reduce_c_api(handle, buf, size) bind(C, name = 'circle_reduce')
+subroutine reduce_c_api(handle, buf, szbuf) bind(C, name = 'circle_reduce')
 use iso_c_binding
 implicit none
 type(c_ptr), value :: handle
 type(c_ptr), intent(in), value :: buf
-integer(c_size_t), intent(in), value :: size
+integer(c_size_t), intent(in), value :: szbuf
 end subroutine reduce_c_api
 
 end interface
 
 class(circle), intent(in) :: this
-type(c_ptr), intent(inout) :: buf
-integer(c_size_t), intent(in) :: size
+type(c_ptr), intent(in) :: buf
+integer(c_size_t), intent(in) :: szbuf
 
-call reduce_c_api(this%handle, buf, size)
+call reduce_c_api(this%handle, buf, szbuf)
 
 end subroutine circle_reduce
 
