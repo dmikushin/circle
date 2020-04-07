@@ -462,7 +462,7 @@ use iso_c_binding
 implicit none
 type(c_ptr), value :: handle
 type(c_ptr), intent(in), value :: element
-integer(c_size_t), intent(in) :: szelement
+integer(c_size_t), intent(in), value :: szelement
 integer(c_int) :: circle_enqueue_c_api
 end function circle_enqueue_c_api
 
@@ -539,9 +539,23 @@ function circle_init()
 use iso_c_binding
 implicit none
 
-integer(c_int) :: circle_init
+interface
 
-! TODO
+function init_c_api(argc, argv) bind(C, name = 'circle_init')
+use iso_c_binding
+implicit none
+integer(c_int) :: argc
+type(c_ptr), value :: argv
+integer(c_int) :: init_c_api
+end function init_c_api
+
+end interface
+
+integer(c_int) :: circle_init
+integer(c_int), parameter :: argc = 0
+type(c_ptr), parameter :: argv = c_null_ptr
+
+circle_init = init_c_api(argc, argv)
 
 end function circle_init
 
