@@ -55,7 +55,7 @@ use iso_c_binding
 use lanl_circle
 implicit none
 
-type(c_ptr), intent(in) :: example
+type(c_ptr), intent(in), value :: example
   !
   ! We give the starting memory address and size of a memory
   ! block that we want libcircle to capture on this process when
@@ -86,7 +86,7 @@ end subroutine
 subroutine my_reduce_op(example, a, a_size, b, b_size)
 implicit none
 
-  type(c_ptr), intent(in) :: example
+  type(c_ptr), intent(in), value :: example
   real(8), intent(in) :: a, b
   integer(c_size_t), intent(in) :: a_size, b_size
   real(8), target :: res
@@ -114,8 +114,8 @@ subroutine my_reduce_fini(example, pi_total, size)
 use iso_c_binding
 implicit none
 
-  type(c_ptr), intent(in) :: example
-  integer(c_size_t), intent(in) :: pi_total
+  type(c_ptr), intent(in), value :: example
+  real(8), intent(in) :: pi_total
   integer(c_size_t), intent(in) :: size
   !
   ! In this example, we get the reduced sum from the input buffer,
@@ -132,7 +132,7 @@ subroutine my_create_some_work(example)
 use iso_c_binding
 implicit none
 
-  type(c_ptr), intent(in) :: example
+  type(c_ptr), intent(in), value :: example
   integer :: n, i, j, err
   integer, allocatable, target :: seed(:)
   !
@@ -163,7 +163,7 @@ subroutine my_process_some_work(example)
 use iso_c_binding
 implicit none
 
-  type(c_ptr), intent(in) :: example
+  type(c_ptr), intent(in), value :: example
   integer, allocatable, target :: seed(:)
   integer(c_size_t) :: szseed
   integer :: ncircle, i, err
@@ -193,7 +193,7 @@ implicit none
     endif
   enddo
 
-  pi_partial = dble(ncircle) / npoints
+  pi_partial = dble(npoints) / ncircle
 end subroutine
 
 end program
