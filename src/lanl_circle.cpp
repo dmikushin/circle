@@ -155,7 +155,8 @@ int circle_dequeue(circle::Circle *circle, uint8_t *element, size_t *szelement) 
 
   std::vector<uint8_t> content;
   circle->dequeue(content);
-  memcpy(element, reinterpret_cast<uint8_t*>(&content[0]), content.size());
+  memcpy(element, reinterpret_cast<uint8_t*>(&content[0]),
+         szelement ? std::min(*szelement, content.size()) : content.size());
 
   if (szelement)
     *szelement = content.size();
