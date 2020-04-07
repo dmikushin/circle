@@ -9,17 +9,24 @@ implicit none
 integer, parameter :: npoints = 10000, njobs = 10
 real(8), target :: pi_partial
 integer :: err
-type(circle) :: example
-external :: foo
+type(c_ptr) :: example
+type(c_funptr) :: create_some_work, process_some_work
+type(c_funptr) :: reduce_init, reduce_op, reduce_fini
+
+  create_some_work = c_funloc(my_create_some_work)
+  process_some_work = c_funloc(my_process_some_work)
+  reduce_init = c_funloc(my_reduce_init)
+  reduce_op = c_funloc(my_reduce_op)
+  reduce_fini = c_funloc(my_reduce_fini)
 
   !
   ! Do partial computations with libcircle.
   !
   err = circle_init()
-  call circle_create(example, foo, foo, & ! my_create_some_work, my_process_some_work, &
-                     my_reduce_init, my_reduce_op, my_reduce_fini, &
+  call circle_create(example, create_some_work, process_some_work, &
+                     reduce_init, reduce_op, reduce_fini, &
                      CircleDefaultFlags)
-  call example%set_log_level(CircleInfo)
+  call circle_set_log_level(example, CircleInfo)
 
   pi_partial = 0
 
@@ -27,9 +34,9 @@ external :: foo
   ! Specify time period between consecutive reductions.
   ! Here we set a time period of 10 seconds.
   !
-  call example%set_reduce_period(10)
+  call circle_set_reduce_period(example, 10)
 
-  call example%execute()
+  call circle_execute(example)
 
 contains
 
@@ -48,7 +55,7 @@ use iso_c_binding
 use lanl_circle
 implicit none
 
-type(circle), intent(in) :: example
+type(c_ptr), intent(in) :: example
   !
   ! We give the starting memory address and size of a memory
   ! block that we want libcircle to capture on this process when
@@ -57,7 +64,7 @@ type(circle), intent(in) :: example
   ! In this example, we capture a single uint64_t value,
   ! which is the global reduce_count variable.
   !
-  call example%reduce(c_loc(pi_partial), c_sizeof(pi_partial))
+  call circle_reduce(example, c_loc(pi_partial), c_sizeof(pi_partial))
 end subroutine
 
 !
@@ -79,7 +86,7 @@ end subroutine
 subroutine my_reduce_op(example, a, a_size, b, b_size)
 implicit none
 
-  type(circle), intent(in) :: example
+  type(c_ptr), intent(in) :: example
   real(8), intent(in) :: a, b
   integer(c_size_t), intent(in) :: a_size, b_size
   real(8), target :: res
@@ -95,7 +102,7 @@ implicit none
   ! libcircle makes a copy of the result when we call circle::reduce.
   !
   res = a + b
-  call example%reduce(c_loc(res), c_sizeof(res))
+  call circle_reduce(example, c_loc(res), c_sizeof(res))
 end subroutine
 
 !
@@ -107,7 +114,7 @@ subroutine my_reduce_fini(example, pi_total, size)
 use iso_c_binding
 implicit none
 
-  type(circle), intent(in) :: example
+  type(c_ptr), intent(in) :: example
   integer(c_size_t), intent(in) :: pi_total
   integer(c_size_t), intent(in) :: size
   !
@@ -125,7 +132,7 @@ subroutine my_create_some_work(example)
 use iso_c_binding
 implicit none
 
-  type(circle), intent(in) :: example
+  type(c_ptr), intent(in) :: example
   integer :: n, i, j, err
   integer, allocatable, target :: seed(:)
   !
@@ -144,7 +151,7 @@ implicit none
     do j = 1, n
       seed(j) = j + i
     enddo
-    err = example%enqueue(c_loc(seed), sizeof(seed(1)) * n)
+    err = circle_enqueue(example, c_loc(seed), sizeof(seed(1)) * n)
   enddo    
     
   deallocate(seed)
@@ -156,7 +163,7 @@ subroutine my_process_some_work(example)
 use iso_c_binding
 implicit none
 
-  type(circle), intent(in) :: example
+  type(c_ptr), intent(in) :: example
   integer, allocatable, target :: seed(:)
   integer(c_size_t) :: szseed
   integer :: ncircle, i, err
@@ -166,9 +173,9 @@ implicit none
   ! Master process sends us the random seed that he generated,
   ! as an example of data sharing. We use this seed in our processing.
   !
-  err = example%dequeue(c_null_ptr, szseed)
+  err = circle_dequeue(example, c_null_ptr, szseed)
   allocate(seed(szseed / c_sizeof(seed(1))))
-  err = example%dequeue(c_loc(seed), szseed)
+  err = circle_dequeue(example, c_loc(seed), szseed)
   call random_seed(put=seed)
   deallocate(seed)
 

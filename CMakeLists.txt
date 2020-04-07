@@ -62,3 +62,8 @@ target_include_directories(example_reduction_c PRIVATE ${CMAKE_CURRENT_SOURCE_DI
 target_include_directories(example_reduction_c PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/filesystem/include)
 target_link_libraries(example_reduction_c ${PROJECT_NAME})
 
+add_executable(example_pi_f90 "${CMAKE_CURRENT_SOURCE_DIR}/src/examples/example_pi.f90")
+target_include_directories(example_pi_f90 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_include_directories(example_pi_f90 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/filesystem/include)
+target_link_libraries(example_pi_f90 ${PROJECT_NAME})
+
