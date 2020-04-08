@@ -65,6 +65,11 @@ Circle circle_create(
     circle_reduce_finalize_callback_func circle_reduce_finalize_callback,
     enum CircleRuntimeFlags runtime_flags);
 
+/*
+ * Dispose the specified Circle instance.
+ */
+void circle_free(Circle circle);
+
 enum CircleLogLevel circle_get_log_level(Circle circle);
 
 /**

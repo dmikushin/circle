@@ -98,6 +98,28 @@ handle = create_c_api(create_callback, circle_process_callback, &
 end subroutine circle_create
 
 !
+! Dispose the specified Circle instance.
+!
+subroutine circle_free(handle)
+use iso_c_binding
+implicit none
+
+interface
+
+subroutine free_c_api(handle) bind(C, name = 'circle_free')
+use iso_c_binding
+implicit none
+type(c_ptr), value :: handle
+end subroutine free_c_api
+
+end interface
+
+type(c_ptr) :: handle
+
+call free_c_api(handle)
+
+end subroutine circle_free
+!
 !
 !
 function circle_get_log_level(handle)

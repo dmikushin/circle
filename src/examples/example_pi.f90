@@ -35,6 +35,8 @@ type(c_funptr) :: reduce_init, reduce_op, reduce_fini
 
   call circle_execute(example)
 
+  call circle_free(example)
+
 contains
 
 !

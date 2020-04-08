@@ -38,6 +38,13 @@ Circle circle_create(
   return (Circle)circle;
 }
 
+/*
+ * Dispose the specified Circle instance.
+ */
+void circle_free(Circle circle) {
+  delete reinterpret_cast<circle::Circle *>(circle);
+}
+
 enum CircleLogLevel circle_get_log_level(Circle circle) {
   return (CircleLogLevel) reinterpret_cast<circle::Circle *>(circle)
       ->getLogLevel();

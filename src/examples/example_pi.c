@@ -145,6 +145,8 @@ int main(int argc, char* argv[]) {
 
   circle_execute(example);
 
+  circle_free(example);
+
   return 0;
 }
 
