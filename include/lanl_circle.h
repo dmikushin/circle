@@ -52,7 +52,7 @@ typedef void (*circle_reduce_finalize_callback_func)(Circle circle,
 Circle circle_create_simple(
     circle_callback_func create_callback,
     circle_callback_func circle_process_callback,
-    CircleRuntimeFlags runtime_flags);
+    enum CircleRuntimeFlags runtime_flags);
 
 /**
  * Initialize a Circle instance for parallel processing and reduction.
@@ -63,7 +63,7 @@ Circle circle_create(
     circle_reduce_init_callback_func circle_reduce_init_callback,
     circle_reduce_operation_callback_func circle_reduce_operation_callback,
     circle_reduce_finalize_callback_func circle_reduce_finalize_callback,
-    CircleRuntimeFlags runtime_flags);
+    enum CircleRuntimeFlags runtime_flags);
 
 enum CircleLogLevel circle_get_log_level(Circle circle);
 

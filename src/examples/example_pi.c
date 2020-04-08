@@ -1,11 +1,9 @@
-#include <ghc/filesystem.hpp>
-#include <iostream>
-#include <lanl_circle.hpp>
+#include <lanl_circle.h>
+#include <stdio.h>
+#include <stdlib.h>
 
-namespace fs = ghc::filesystem;
-using namespace std;
-
-static size_t sztotal_partial = 0;
+static const int npoints = 100000, njobs = 10;
+static double pi_partial;
 
 /*
  * The reduce_init callback provides the memory address and size of the
@@ -17,16 +15,16 @@ static size_t sztotal_partial = 0;
  * its contents can be safely changed or go out of scope after the call
  * to circle::reduce returns.
  */
-static void my_reduce_init(circle::Circle *circle) {
+static void my_reduce_init(Circle example) {
   /*
    * We give the starting memory address and size of a memory
    * block that we want Circle to capture on this process when
    * it starts a new reduction operation.
    *
-   * In this example, we capture a single uint64_t value,
-   * which is the global reduce_count variable.
+   * In this example, we capture a single floating-point value,
+   * which is the global pi_partial variable.
    */
-  circle->reduce(&sztotal_partial, sizeof(size_t));
+  circle_reduce(example, &pi_partial, sizeof(pi_partial));
 }
 
 /*
@@ -45,8 +43,7 @@ static void my_reduce_init(circle::Circle *circle) {
  * input buffer.  For example, one could concatentate buffers so that
  * the reduction actually performs a gather operation.
  */
-static void my_reduce_op(circle::Circle *circle, const void *buf1, size_t size1,
-                         const void *buf2, size_t size2) {
+static void my_reduce_op(Circle example, const void* a, size_t a_size, const void* b, size_t b_size) {
   /*
    * Here we are given the starting address and size of two input
    * buffers.  These could be the initial memory blocks copied during
@@ -58,10 +55,8 @@ static void my_reduce_op(circle::Circle *circle, const void *buf1, size_t size1,
    * In this example, we sum two input uint64_t values and
    * Circle makes a copy of the result when we call circle::reduce.
    */
-  uint64_t a = *(const uint64_t *)buf1;
-  uint64_t b = *(const uint64_t *)buf2;
-  uint64_t sum = a + b;
-  circle->reduce(&sum, sizeof(uint64_t));
+  const double res = *(const double*)a + *(const double*)b;
+  circle_reduce(example, &res, sizeof(res));
 }
 
 /*
@@ -69,25 +64,21 @@ static void my_reduce_op(circle::Circle *circle, const void *buf1, size_t size1,
  * provides a buffer holding the final reduction result as in input
  * parameter. Typically, one might print the result in this callback.
  */
-static void my_reduce_fini(circle::Circle *circle, const void *buf,
-                           size_t size) {
+static void my_reduce_fini(Circle example, const void* pi_total, size_t size) {
   /*
    * In this example, we get the reduced sum from the input buffer,
-   * and we compute the average processing rate.  We then print
-   * the count, time, and rate of items processed.
+   * and we compute the approximate value of PI.
    */
-
-  // get result of reduction
-  const size_t sztotal = *reinterpret_cast<const size_t *>(buf);
-  cout << "sztotal = " << sztotal << endl;
+  printf("result = %f\n", (*(const double*)pi_total) * 4 / njobs);
 }
 
-/* An example of a create callback defined by your program */
-static void my_create_some_work(circle::Circle *circle) {
+/**
+ * An example of a create callback defined by your program.
+ */
+static void my_create_some_work(Circle example) {
   /*
    * This is where you should generate work that needs to be processed.
-   * For example, if your goal is to size files on a cluster filesystem,
-   * this is where you would read directory and and enqueue directory names.
+   * For example, we can generate RNG seeds to be used by worker processes.
    *
    * By default, the create callback is only executed on the root
    * process, i.e., the process whose call to circle::init returns 0.
@@ -95,57 +86,65 @@ static void my_create_some_work(circle::Circle *circle) {
    * callback is invoked on all processes.
    */
 
-  const fs::path directory = "/bin/";
-  if (fs::exists(directory) && fs::is_directory(directory)) {
-    for (fs::directory_iterator i(directory), ie; i != ie; i++) {
-      if (!fs::exists(i->status()) || !fs::is_regular_file(i->status()))
-        continue;
-
-      const string filename = i->path().string();
-      vector<uint8_t> content(filename.begin(), filename.end());
-      circle->enqueue(content);
-    }
+  for (int i = 0; i < njobs; i++) {
+    int seed = i;
+    circle_enqueue(example, (const uint8_t *)&seed, sizeof(seed));
   }
 }
 
-void store_in_database(size_t finished_work) {
-  sztotal_partial += finished_work;
-}
+/**
+ * An example of a process callback defined by your program.
+ */
+static void my_process_some_work(Circle example) {
+  /*
+   * Master process sends us the random seed that he generated,
+   * as an example of data sharing. We use this seed in our processing.
+   */
+  size_t szseed = 0;
+  circle_dequeue(example, NULL, &szseed);
+  unsigned int* seed = malloc(szseed);
+  circle_dequeue(example, (uint8_t *)seed, &szseed);
+  printf("Rank %d received seed = %d\n", circle_get_rank(example), seed[0]);
+  srand(*seed);
+  free(seed);
 
-/* An example of a process callback defined by your program. */
-static void my_process_some_work(circle::Circle *circle) {
   /*
    * This is where work should be processed. For example, this is where you
    * should size one of the files which was placed on the queue by your
    * create_some_work callback. You should try to keep this short and block
    * as little as possible.
    */
-  vector<uint8_t> content;
-  circle->dequeue(content);
-  string my_data(content.begin(), content.end());
+  int ncircle = 0;
+  for (int i = 0; i < npoints; i++) {
+    double rval[2];
+    rval[0] = rand();
+    rval[1] = rand();
+    rval[0] /= (double)RAND_MAX;
+    rval[1] /= (double)RAND_MAX;
+    if (rval[0] * rval[0] + rval[1] * rval[1] <= 1.0)
+      ncircle++;
+  }
 
-  size_t finished_work = fs::file_size(my_data);
-
-  store_in_database(finished_work);
+  pi_partial += (double)ncircle / npoints;
 }
 
-int main(int argc, char *argv[]) {
-  /*
-   * Do partial computations with Circle.
-   */
-  circle::init(&argc, &argv);
-  circle::Circle example(my_create_some_work, my_process_some_work,
-                         my_reduce_init, my_reduce_op, my_reduce_fini,
-                         circle::RuntimeFlags::DefaultFlags);
-  example.setLogLevel(circle::LogLevel::Info);
+int main(int argc, char* argv[]) {
+  circle_init(&argc, &argv);
+  Circle example = circle_create(my_create_some_work, my_process_some_work,
+                     my_reduce_init, my_reduce_op, my_reduce_fini,
+                     CircleDefaultFlags);
+  circle_set_log_level(example, CircleInfo);
+
+  pi_partial = 0.0;
 
   /*
    * Specify time period between consecutive reductions.
    * Here we set a time period of 10 seconds.
    */
-  example.setReducePeriod(10);
+  circle_set_reduce_period(example, 10);
 
-  example.execute();
+  circle_execute(example);
 
   return 0;
 }
+

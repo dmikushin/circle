@@ -1,6 +1,3 @@
-subroutine foo
-end subroutine foo
-
 program main
 use iso_c_binding
 use lanl_circle
@@ -61,8 +58,8 @@ type(c_ptr), intent(in), value :: example
   ! block that we want Circle to capture on this process when
   ! it starts a new reduction operation.
   !
-  ! In this example, we capture a single uint64_t value,
-  ! which is the global reduce_count variable.
+  ! In this example, we capture a single floating-point value,
+  ! which is the global pi_partial variable.
   !
   call circle_reduce(example, c_loc(pi_partial), c_sizeof(pi_partial))
 end subroutine
@@ -88,7 +85,7 @@ implicit none
 
   type(c_ptr), intent(in), value :: example
   real(8), intent(in) :: a, b
-  integer(c_size_t), intent(in) :: a_size, b_size
+  integer(c_size_t), intent(in), value :: a_size, b_size
   real(8), target :: res
   !
   ! Here we are given the starting address and size of two input
@@ -116,14 +113,11 @@ implicit none
 
   type(c_ptr), intent(in), value :: example
   real(8), intent(in) :: pi_total
-  integer(c_size_t), intent(in) :: size
+  integer(c_size_t), intent(in), value :: size
   !
   ! In this example, we get the reduced sum from the input buffer,
-  ! and we compute the average processing rate.  We then print
-  ! the count, time, and rate of items processed.
+  ! and we compute the approximate value of PI.
   !
-
-  ! get result of reduction
   print *, "result = ", pi_total * 4 / njobs
 end subroutine
 
