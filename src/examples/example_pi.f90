@@ -20,7 +20,7 @@ type(c_funptr) :: reduce_init, reduce_op, reduce_fini
   reduce_fini = c_funloc(my_reduce_fini)
 
   !
-  ! Do partial computations with libcircle.
+  ! Do partial computations with Circle.
   !
   err = circle_init()
   call circle_create(example, create_some_work, process_some_work, &
@@ -44,7 +44,7 @@ contains
 ! The reduce_init callback provides the memory address and size of the
 ! variable(s) to use as input on each process to the reduction
 ! operation.  One can specify an arbitrary block of data as input.
-! When a new reduction is started, libcircle invokes this callback on
+! When a new reduction is started, Circle invokes this callback on
 ! each process to snapshot the memory block specified in the call to
 ! circle::reduce.  The library makes a memcpy of the memory block, so
 ! its contents can be safely changed or go out of scope after the call
@@ -58,7 +58,7 @@ implicit none
 type(c_ptr), intent(in), value :: example
   !
   ! We give the starting memory address and size of a memory
-  ! block that we want libcircle to capture on this process when
+  ! block that we want Circle to capture on this process when
   ! it starts a new reduction operation.
   !
   ! In this example, we capture a single uint64_t value,
@@ -68,11 +68,11 @@ type(c_ptr), intent(in), value :: example
 end subroutine
 
 !
-! On intermediate nodes of the reduction tree, libcircle invokes the
+! On intermediate nodes of the reduction tree, Circle invokes the
 ! reduce_op callback to reduce two data buffers.  The starting
 ! address and size of each data buffer are provided as input
 ! parameters to the callback function.  An arbitrary reduction
-! operation can be executed.  Then libcircle snapshots the memory
+! operation can be executed.  Then Circle snapshots the memory
 ! block specified in the call to circle::reduce to capture the partial
 ! result.  The library makes a memcpy of the memory block, so its
 ! contents can be safely changed or go out of scope after the call to
@@ -99,7 +99,7 @@ implicit none
   ! to circle::reduce.
   !
   ! In this example, we sum two input uint64_t values and
-  ! libcircle makes a copy of the result when we call circle::reduce.
+  ! Circle makes a copy of the result when we call circle::reduce.
   !
   res = a + b
   call circle_reduce(example, c_loc(res), c_sizeof(res))

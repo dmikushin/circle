@@ -397,7 +397,7 @@ call abort_c_api(handle)
 end subroutine circle_abort
 
 !
-! Call handle function to read in libcircle restart files.
+! Call handle function to read in Circle restart files.
 !
 function circle_read_restarts(handle)
 use iso_c_binding
@@ -422,7 +422,7 @@ circle_read_restarts = read_restarts_c_api(handle)
 end function circle_read_restarts
 
 !
-! Call handle function to read in libcircle restart files.  Each rank
+! Call handle function to read in Circle restart files.  Each rank
 ! writes a file called circle<rank>.txt
 !
 function circle_checkpoint(handle)

@@ -117,14 +117,14 @@ void circle_abort(Circle circle) {
 }
 
 /**
- * Call this function to read in libcircle restart files.
+ * Call this function to read in Circle restart files.
  */
 int8_t circle_read_restarts(Circle circle) {
   return reinterpret_cast<circle::Circle *>(circle)->readRestarts();
 }
 
 /**
- * Call this function to read in libcircle restart files.  Each rank
+ * Call this function to read in Circle restart files.  Each rank
  * writes a file called circle<rank>.txt
  */
 int8_t circle_checkpoint(Circle circle) {

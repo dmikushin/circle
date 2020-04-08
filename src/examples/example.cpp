@@ -56,7 +56,7 @@ static void my_process_some_work(circle::Circle *circle) {
 
 int main(int argc, char *argv[]) {
   /*
-   * Initialize state required by libcircle. Arguments should be those passed in
+   * Initialize state required by Circle. Arguments should be those passed in
    * by the launching process. argc is a pointer to the number of arguments,
    * argv is the argument vector. The return value is the MPI rank of the
    * current process.
@@ -65,13 +65,13 @@ int main(int argc, char *argv[]) {
 
   /*
    * Processing and creating work is done through callbacks. Here's how we tell
-   * libcircle about our function which creates the initial work. For MPI nerds,
+   * Circle about our function which creates the initial work. For MPI nerds,
    * this is your rank 0 process.
    */
   // circle::CallbackFunc_create(&my_create_some_work);
 
   /*
-   * After you give libcircle a way to create work, you need to tell it how that
+   * After you give Circle a way to create work, you need to tell it how that
    * work should be processed.
    */
   // circle::CallbackFunc_process(&my_process_some_work);

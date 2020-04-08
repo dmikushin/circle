@@ -1,7 +1,7 @@
 /**
  * @file
  *
- * Handles features of libcircle related to tokens (for self stabilization).
+ * Handles features of Circle related to tokens (for self stabilization).
  */
 
 #include <assert.h>

@@ -165,7 +165,7 @@ void State::reduceCheck(int count, int cleanup) {
 
         /* receive message form child, first int contains
          * flag indicating whether message is valid,
-         * second int is number of completed libcircle work
+         * second int is number of completed Circle work
          * elements, third int is number of bytes of user data */
         long long int recvbuf[3];
         MPI_Recv(recvbuf, 3, MPI_LONG_LONG, child, CIRCLE_TAG_REDUCE, comm,
@@ -358,7 +358,7 @@ void State::reduceSync(int count) {
 
     /* receive message form child, first int contains
      * flag indicating whether message is valid,
-     * second int is number of completed libcircle work
+     * second int is number of completed Circle work
      * elements, third int is number of bytes of user data */
     long long int recvbuf[3];
     MPI_Recv(recvbuf, 3, MPI_LONG_LONG, child, CIRCLE_TAG_REDUCE, comm,
@@ -999,7 +999,7 @@ void State::tokenCheck() {
  * black. It then turns the token black when it comes around, forwards it, and
  * turns its state back to white.
  *
- * @param st the libcircle state struct.
+ * @param st the Circle state struct.
  */
 int State::checkForTerm() {
   /* if our state is marked TERMINATE, we're done */

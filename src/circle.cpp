@@ -28,8 +28,8 @@ public:
 
   ~GlobalInit() {
     /**
-     * After your program has executed, give libcircle a chance to clean up
-     * after itself by calling this. This should be called after all libcircle
+     * After your program has executed, give Circle a chance to clean up
+     * after itself by calling this. This should be called after all Circle
      * API calls.
      */
     if (must_finalize_mpi) {
@@ -71,8 +71,8 @@ public:
 static GlobalInit globalInit;
 
 /**
- * Initialize internal state needed by libcircle. This should be called before
- * any other libcircle API call.
+ * Initialize internal state needed by Circle. This should be called before
+ * any other Circle API call.
  *
  * @param argc the number of arguments passed into the program.
  * @param argv the vector of arguments passed into the program.
@@ -84,12 +84,12 @@ int circle::init(int *argc, char **argv[]) {
 }
 
 /**
- * @brief Sets up libcircle, calls work loop function
+ * @brief Sets up Circle, calls work loop function
  *
  * - Main worker function. This function:
  *     -# Initializes MPI
- *     -# Initializes internal libcircle data structures
- *     -# Calls libcircle's main work loop function.
+ *     -# Initializes internal Circle data structures
+ *     -# Calls Circle's main work loop function.
  *     -# Checkpoints if abort has been called by a rank.
  */
 void CircleImpl::execute() {
@@ -167,9 +167,9 @@ enum LogLevel Circle::getLogLevel() const { return impl->logLevel; }
 FILE *Circle::getLogStream() const { return impl->logStream; }
 
 /**
- * Set the logging level that libcircle should use.
+ * Set the logging level that Circle should use.
  *
- * @param level the logging level that libcircle should output.
+ * @param level the logging level that Circle should output.
  */
 void Circle::setLogLevel(enum LogLevel logLevel_) {
   impl->logLevel = logLevel_;
@@ -267,7 +267,7 @@ int Circle::getReducePeriod() const { return impl->reduce_period; }
 void Circle::setReducePeriod(int secs) { impl->reduce_period = secs; }
 
 /**
- * Call this function to give libcircle initial reduction data.
+ * Call this function to give Circle initial reduction data.
  *
  * @param buf pointer to buffer holding reduction data
  * @param size size of buffer in bytes
@@ -407,12 +407,12 @@ CircleImpl::~CircleImpl() {
 }
 
 /**
- * Call this function to read in libcircle restart files.
+ * Call this function to read in Circle restart files.
  */
 int8_t Circle::readRestarts() { return impl->readRestarts(); }
 
 /**
- * Call this function to read in libcircle restart files.  Each rank
+ * Call this function to read in Circle restart files.  Each rank
  * writes a file called circle<rank>.txt
  */
 int8_t Circle::checkpoint() { return impl->checkpoint(); }
@@ -420,12 +420,12 @@ int8_t Circle::checkpoint() { return impl->checkpoint(); }
 CircleImpl *Circle::getImpl() { return impl; }
 
 /**
- * Call this function to read in libcircle restart files.
+ * Call this function to read in Circle restart files.
  */
 int8_t CircleImpl::readRestarts() { return queue->read(parent->getRank()); }
 
 /**
- * Call this function to read in libcircle restart files.  Each rank
+ * Call this function to read in Circle restart files.  Each rank
  * writes a file called circle<rank>.txt
  */
 int8_t CircleImpl::checkpoint() { return queue->write(parent->getRank()); }

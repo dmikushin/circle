@@ -245,7 +245,7 @@ public:
    * black. It then turns the token black when it comes around, forwards it, and
    * turns its state back to white.
    *
-   * @param st the libcircle state struct.
+   * @param st the Circle state struct.
    */
   int checkForTerm();
 

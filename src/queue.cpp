@@ -20,7 +20,7 @@ using namespace circle;
 using namespace circle::internal;
 
 /**
- * Allocate memory for the basic queue structure used by libcircle.
+ * Allocate memory for the basic queue structure used by Circle.
  *
  * @return a reference to the allocated queue structure.
  *
