@@ -176,6 +176,7 @@ implicit none
   err = circle_dequeue(example, c_null_ptr, szseed)
   allocate(seed(szseed / c_sizeof(seed(1))))
   err = circle_dequeue(example, c_loc(seed), szseed)
+  !print *, "Rank ", circle_get_rank(example), " recevied seed ", seed
   call random_seed(put=seed)
   deallocate(seed)
 
@@ -193,7 +194,7 @@ implicit none
     endif
   enddo
 
-  pi_partial = dble(ncircle) / npoints 
+  pi_partial = pi_partial + dble(ncircle) / npoints 
 end subroutine
 
 end program
