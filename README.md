@@ -59,6 +59,8 @@ The example `src/examples/example_reduction.cpp` shows how to use reductions to 
 the number of items processed. Each process counts the number of items it has processed locally.
 The reducton computes the global sum across processes, and it prints the global sum along with the average rate.
 
+Two examples above are in C++. In addition to that, we offer two examples in C and Fortran: `src/examples/example_pi.c` and `src/examples/example_pi.f90`. Both are dedicated to simple parallel calculation of PI value. The master process sends RNG seeds to workers; workers use seeds to sample statistical PI approximation and reduce local results into a global average.
+
 ## Runtime options
 
 The following bit flags can be OR'ed together and passed to `Circle::Circle` constructor or at anytime through `Circle::setRuntimeFlags` before
