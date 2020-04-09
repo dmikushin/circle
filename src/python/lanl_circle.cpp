@@ -137,18 +137,17 @@ int circle_enqueue(Circle circle, const uint8_t *element, size_t szelement);
 int circle_dequeue(Circle circle, uint8_t *element, size_t *szelement);
 
 uint32_t circle_get_local_queue_size(Circle circle);
-
-/**
- * Initialize internal state needed by Circle. This should be called before
- * any other Circle API call. This returns the MPI rank value.
- */
-int circle_init(int *argc, char **argv[]);
-
-/**
- * Returns an elapsed time on the calling processor for benchmarking purposes.
- */
-double circle_wtime(void);
 #endif
+
+  m.def("init", []() {
+      int argc = 0;
+      char** argv = nullptr;
+      return circle_init(&argc, &argv);
+    }, 
+    "Initialize internal state needed by Circle. This should be called before"
+    " any other Circle API call. This returns the MPI rank value.");
+
+  m.def("wtime", &circle_wtime, "Returns an elapsed time on the calling processor for benchmarking purposes");
 }
 
 
