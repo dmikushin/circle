@@ -41,6 +41,7 @@ target_link_libraries(${PROJECT_NAME}_library ${MPI_CXX_LIBRARIES} ${MPI_C_LIBRA
 set_target_properties(${PROJECT_NAME}_library PROPERTIES OUTPUT_NAME ${PROJECT_NAME})
 
 pybind11_add_module(${PROJECT_NAME} SHARED "${CMAKE_CURRENT_SOURCE_DIR}/src/python/${PROJECT_NAME}.cpp")
+target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/pybind11/include)
 target_link_libraries(${PROJECT_NAME} PRIVATE ${PROJECT_NAME}_library)
 
