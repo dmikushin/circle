@@ -125,9 +125,13 @@ PYBIND11_MODULE(hddm_solver, m) {
     return circle.cast<std::shared_ptr<circle::Circle>>()->getRank();
   });
 
-#if 0
-void circle_reduce(Circle circle, const void *buf, size_t size);
-#endif
+  m.def("reduce", [](py::object circle, py::object item) {
+    // TODO Use http://dlib.net/dlib/python/serialize_pickle.h.html
+    // and https://stackoverflow.com/questions/21017698/converting-int-to-bytes-in-python-3
+    void* buf = nullptr;
+    size_t size = 0;
+    return circle.cast<std::shared_ptr<circle::Circle>>()->reduce(buf, size);
+  });
 
   m.def(
       "execute",
