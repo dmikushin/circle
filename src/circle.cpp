@@ -130,7 +130,7 @@ void CircleImpl::execute() {
    * only invoke on master unless CREATE_GLOBAL is set */
   if (rank == 0 ||
       (runtimeFlags & RuntimeFlags::CreateGlobal) != RuntimeFlags::None) {
-    (*(parent->impl->createCallback))(parent);
+    parent->impl->createCallback(parent);
   }
 
   /* work until we get a terminate message */
@@ -196,7 +196,7 @@ Circle::Circle(circle::CallbackFunc createCallback,
  */
 Circle::Circle(circle::CallbackFunc createCallback,
                circle::CallbackFunc processCallback,
-               circle::reduceInitCallbackFunc reduceInitCallback,
+               circle::CallbackFunc reduceInitCallback,
                circle::reduceOperationCallbackFunc reduceOperationCallback,
                circle::reduceFinalizeCallbackFunc reduceFinalizeCallback,
                circle::RuntimeFlags runtimeFlags) {
@@ -365,7 +365,7 @@ CircleImpl::CircleImpl(Circle *parent_, circle::CallbackFunc createCallback_,
 CircleImpl::CircleImpl(
     Circle *parent_, circle::CallbackFunc createCallback_,
     circle::CallbackFunc processCallback_,
-    circle::reduceInitCallbackFunc reduceInitCallback_,
+    circle::CallbackFunc reduceInitCallback_,
     circle::reduceOperationCallbackFunc reduceOperationCallback_,
     circle::reduceFinalizeCallbackFunc reduceFinalizeCallback_,
     circle::RuntimeFlags runtimeFlags_)

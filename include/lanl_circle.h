@@ -13,30 +13,37 @@ extern "C" {
  * Run time flags for the behavior of splitting work.
  */
 enum CircleRuntimeFlags {
-  CircleSplitRandom = 1 << 0,      /* Split work randomly. */
-  CircleSplitEqual = 1 << 1,       /* Split work evenly */
-  CircleCreateGlobal = 1 << 2,     /* Call create callback on all procs */
-  CircleTermTree = 1 << 3,         /* Use tree-based termination */
-  CircleDefaultFlags = CircleSplitEqual, /* Default behavior is random work stealing */
+  CircleSplitRandom = 1 << 0,  /* Split work randomly. */
+  CircleSplitEqual = 1 << 1,   /* Split work evenly */
+  CircleCreateGlobal = 1 << 2, /* Call create callback on all procs */
+  CircleTermTree = 1 << 3,     /* Use tree-based termination */
+  CircleDefaultFlags =
+      CircleSplitEqual, /* Default behavior is random work stealing */
 };
 
 /**
  * The various logging levels that Circle will output.
  */
-enum CircleLogLevel { CircleNone = 0, CircleFatal = 1, CircleError = 2, CircleWarning = 3, CircleInfo = 4, CircleDebug = 5 };
+enum CircleLogLevel {
+  CircleNone = 0,
+  CircleFatal = 1,
+  CircleError = 2,
+  CircleWarning = 3,
+  CircleInfo = 4,
+  CircleDebug = 5
+};
 
 typedef struct _circle *Circle;
 
 /**
- * The type for defining callbacks for create and process.
+ * Callbacks for creating and processing work queue and also for
+ * initializing reduction.
  */
 typedef void (*circle_callback_func)(Circle circle);
 
 /**
- * Callbacks for initializing, executing, and obtaining final result
- * of a reduction
+ * Callbacks for executing and obtaining final result of a reduction.
  */
-typedef void (*circle_reduce_init_callback_func)(Circle circle);
 typedef void (*circle_reduce_operation_callback_func)(Circle circle,
                                                       const void *buf1,
                                                       size_t size1,
@@ -49,18 +56,17 @@ typedef void (*circle_reduce_finalize_callback_func)(Circle circle,
 /**
  * Initialize a Circle instance for parallel processing.
  */
-Circle circle_create_simple(
-    circle_callback_func create_callback,
-    circle_callback_func circle_process_callback,
-    enum CircleRuntimeFlags runtime_flags);
+Circle circle_create_simple(circle_callback_func circle_create_callback,
+                            circle_callback_func circle_process_callback,
+                            enum CircleRuntimeFlags runtime_flags);
 
 /**
  * Initialize a Circle instance for parallel processing and reduction.
  */
 Circle circle_create(
-    circle_callback_func create_callback,
+    circle_callback_func circle_create_callback,
     circle_callback_func circle_process_callback,
-    circle_reduce_init_callback_func circle_reduce_init_callback,
+    circle_callback_func circle_reduce_init_callback,
     circle_reduce_operation_callback_func circle_reduce_operation_callback,
     circle_reduce_finalize_callback_func circle_reduce_finalize_callback,
     enum CircleRuntimeFlags runtime_flags);

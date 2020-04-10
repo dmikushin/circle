@@ -75,7 +75,7 @@ public:
 class State {
   circle::CallbackFunc processCallback;
 
-  circle::reduceInitCallbackFunc reduceInitCallback;
+  circle::CallbackFunc reduceInitCallback;
   circle::reduceOperationCallbackFunc reduceOperationCallback;
   circle::reduceFinalizeCallbackFunc reduceFinalizeCallback;
 
@@ -162,7 +162,7 @@ class State {
 
 public:
   State(Circle *parent, circle::CallbackFunc processCallback,
-        circle::reduceInitCallbackFunc reduceInitCallback,
+        circle::CallbackFunc reduceInitCallback,
         circle::reduceOperationCallbackFunc reduceOperationCallback,
         circle::reduceFinalizeCallbackFunc reduceFinalizeCallback,
         const MPI_Comm &comm, Queue *queue, void *&reduce_buf,

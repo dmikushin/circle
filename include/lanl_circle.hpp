@@ -1,6 +1,7 @@
 #ifndef LANL_CIRCLE_HPP
 #define LANL_CIRCLE_HPP
 
+#include <functional>
 #include <stddef.h>
 #include <stdint.h>
 #include <string>
@@ -45,20 +46,19 @@ enum class LogLevel : unsigned {
 class Circle;
 
 /**
- * The type for defining callbacks for create and process.
+ * Callbacks for creating and processing work queue and also for
+ * initializing reduction.
  */
-typedef void (*CallbackFunc)(circle::Circle *circle);
+typedef std::function<void(Circle *circle)> CallbackFunc;
 
 /**
- * Callbacks for initializing, executing, and obtaining final result
- * of a reduction
+ * Callbacks for executing and obtaining final result of a reduction.
  */
-typedef void (*reduceInitCallbackFunc)(circle::Circle *circle);
-typedef void (*reduceOperationCallbackFunc)(circle::Circle *circle,
-                                            const void *buf1, size_t size1,
-                                            const void *buf2, size_t size2);
-typedef void (*reduceFinalizeCallbackFunc)(circle::Circle *circle,
-                                           const void *buf, size_t size);
+typedef std::function<void(Circle *circle, const void *buf1, size_t size1,
+                           const void *buf2, size_t size2)>
+    reduceOperationCallbackFunc;
+typedef std::function<void(Circle *circle, const void *buf, size_t size)>
+    reduceFinalizeCallbackFunc;
 
 namespace internal {
 
@@ -82,7 +82,7 @@ public:
    */
   Circle(circle::CallbackFunc createCallback,
          circle::CallbackFunc processCallback,
-         circle::reduceInitCallbackFunc reduceInitCallback,
+         circle::CallbackFunc reduceInitCallback,
          circle::reduceOperationCallbackFunc reduceOperationCallback,
          circle::reduceFinalizeCallbackFunc reduceFinalizeCallback,
          circle::RuntimeFlags runtimeFlags);

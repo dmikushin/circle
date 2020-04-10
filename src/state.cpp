@@ -15,7 +15,7 @@ using namespace circle::internal;
  * Initializes all variables local to a rank
  */
 State::State(Circle *parent_, circle::CallbackFunc processCallback_,
-             circle::reduceInitCallbackFunc reduceInitCallback_,
+             circle::CallbackFunc reduceInitCallback_,
              circle::reduceOperationCallbackFunc reduceOperationCallback_,
              circle::reduceFinalizeCallbackFunc reduceFinalizeCallback_,
              const MPI_Comm &comm_, Queue *queue_, void *&reduce_buf_,
@@ -210,8 +210,7 @@ void State::reduceCheck(int count, int cleanup) {
           if (reduceOperationCallback != NULL) {
             void *currbuf = reduce_buf;
             size_t currsize = reduce_buf_size;
-            (*(reduceOperationCallback))(parent, currbuf, currsize, inbuf,
-                                         insize);
+            reduceOperationCallback(parent, currbuf, currsize, inbuf, insize);
           }
         }
 
@@ -251,7 +250,7 @@ void State::reduceCheck(int count, int cleanup) {
           if (reduceFinalizeCallback != NULL) {
             void *resultbuf = reduce_buf;
             size_t resultsize = reduce_buf_size;
-            (*(reduceFinalizeCallback))(parent, resultbuf, resultsize);
+            reduceFinalizeCallback(parent, resultbuf, resultsize);
           }
         }
       }
@@ -317,7 +316,7 @@ void State::reduceCheck(int count, int cleanup) {
        * it will be stored in circle after user
        * calls reduce which should be done in callback */
       if (reduceInitCallback != NULL) {
-        (*(reduceInitCallback))(parent);
+        reduceInitCallback(parent);
       }
 
       /* send message to each child */
@@ -348,7 +347,7 @@ void State::reduceSync(int count) {
    * it will be stored in circle after user
    * calls reduce which should be done in callback */
   if (reduceInitCallback != NULL) {
-    (*(reduceInitCallback))(parent);
+    reduceInitCallback(parent);
   }
 
   /* wait for messages from our children */
@@ -387,7 +386,7 @@ void State::reduceSync(int count) {
     if (reduceOperationCallback != NULL) {
       void *currbuf = reduce_buf;
       size_t currsize = reduce_buf_size;
-      (*(reduceOperationCallback))(parent, currbuf, currsize, inbuf, insize);
+      reduceOperationCallback(parent, currbuf, currsize, inbuf, insize);
     }
 
     /* free temporary buffer holding incoming user data */
@@ -417,7 +416,7 @@ void State::reduceSync(int count) {
     if (reduceFinalizeCallback != NULL) {
       void *resultbuf = reduce_buf;
       size_t resultsize = reduce_buf_size;
-      (*(reduceFinalizeCallback))(parent, resultbuf, resultsize);
+      reduceFinalizeCallback(parent, resultbuf, resultsize);
     }
   }
 }
@@ -1570,7 +1569,7 @@ void State::mainLoop() {
     /* If I have some work and have not received a signal to
      * abort, process one work item */
     if (queue->count > 0 && !ABORT_FLAG) {
-      (*(processCallback))(parent);
+      processCallback(parent);
       local_objects_processed++;
     }
     /* If I don't have work, or if I received signal to abort,

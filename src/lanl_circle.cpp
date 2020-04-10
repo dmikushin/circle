@@ -1,19 +1,25 @@
 #include "lanl_circle.h"
-#include "lanl_circle.hpp"
 #include "circle.hpp"
+#include "lanl_circle.hpp"
 
 #include <string.h>
+
+using CallbackType = void(circle::Circle *);
+using reduceOperationCallbackType = void(circle::Circle *circle,
+                                         const void *buf1, size_t size1,
+                                         const void *buf2, size_t size2);
+using reduceFinalizeCallbackType = void(circle::Circle *circle, const void *buf,
+                                        size_t size);
 
 /**
  * Initialize a Circle instance for parallel processing.
  */
-Circle circle_create_simple(
-    circle_callback_func create_callback,
-    circle_callback_func circle_process_callback,
-    CircleRuntimeFlags runtime_flags) {
+Circle circle_create_simple(circle_callback_func circle_create_callback,
+                            circle_callback_func circle_process_callback,
+                            CircleRuntimeFlags runtime_flags) {
   circle::Circle *circle = new circle::Circle(
-      (circle::CallbackFunc)create_callback,
-      (circle::CallbackFunc)circle_process_callback,
+      reinterpret_cast<CallbackType *>(circle_create_callback),
+      reinterpret_cast<CallbackType *>(circle_process_callback),
       (circle::RuntimeFlags)runtime_flags);
   return (Circle)circle;
 }
@@ -22,18 +28,20 @@ Circle circle_create_simple(
  * Initialize a Circle instance for parallel processing and reduction.
  */
 Circle circle_create(
-    circle_callback_func create_callback,
+    circle_callback_func circle_create_callback,
     circle_callback_func circle_process_callback,
-    circle_reduce_init_callback_func circle_reduce_init_callback,
+    circle_callback_func circle_reduce_init_callback,
     circle_reduce_operation_callback_func circle_reduce_operation_callback,
     circle_reduce_finalize_callback_func circle_reduce_finalize_callback,
     CircleRuntimeFlags runtime_flags) {
   circle::Circle *circle = new circle::Circle(
-      (circle::CallbackFunc)create_callback,
-      (circle::CallbackFunc)circle_process_callback,
-      (circle::reduceInitCallbackFunc)circle_reduce_init_callback,
-      (circle::reduceOperationCallbackFunc)circle_reduce_operation_callback,
-      (circle::reduceFinalizeCallbackFunc)circle_reduce_finalize_callback,
+      reinterpret_cast<CallbackType *>(circle_create_callback),
+      reinterpret_cast<CallbackType *>(circle_process_callback),
+      reinterpret_cast<CallbackType *>(circle_reduce_init_callback),
+      reinterpret_cast<reduceOperationCallbackType *>(
+          circle_reduce_operation_callback),
+      reinterpret_cast<reduceFinalizeCallbackType *>(
+          circle_reduce_finalize_callback),
       (circle::RuntimeFlags)runtime_flags);
   return (Circle)circle;
 }
@@ -151,7 +159,8 @@ int circle_enqueue(Circle circle, const uint8_t *element, size_t szelement) {
 namespace circle {
 namespace internal {
 
-int circle_dequeue(circle::Circle *circle, uint8_t *element, size_t *szelement) {
+int circle_dequeue(circle::Circle *circle, uint8_t *element,
+                   size_t *szelement) {
   if (!element && !szelement)
     return -1;
 
@@ -162,7 +171,7 @@ int circle_dequeue(circle::Circle *circle, uint8_t *element, size_t *szelement) 
 
   std::vector<uint8_t> content;
   circle->dequeue(content);
-  memcpy(element, reinterpret_cast<uint8_t*>(&content[0]),
+  memcpy(element, reinterpret_cast<uint8_t *>(&content[0]),
          szelement ? std::min(*szelement, content.size()) : content.size());
 
   if (szelement)
@@ -176,7 +185,7 @@ int circle_dequeue(circle::Circle *circle, uint8_t *element, size_t *szelement) 
 
 int circle_dequeue(Circle circle, uint8_t *element, size_t *szelement) {
   return circle::internal::circle_dequeue(
-    reinterpret_cast<circle::Circle *>(circle), element, szelement);
+      reinterpret_cast<circle::Circle *>(circle), element, szelement);
 }
 
 uint32_t circle_get_local_queue_size(Circle circle) {

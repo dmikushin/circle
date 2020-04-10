@@ -16,7 +16,7 @@ class CircleImpl {
   circle::CallbackFunc createCallback;
   circle::CallbackFunc processCallback;
 
-  circle::reduceInitCallbackFunc reduceInitCallback;
+  circle::CallbackFunc reduceInitCallback;
   circle::reduceOperationCallbackFunc reduceOperationCallback;
   circle::reduceFinalizeCallbackFunc reduceFinalizeCallback;
 
@@ -52,7 +52,7 @@ public:
    */
   CircleImpl(Circle *parent, circle::CallbackFunc createCallback,
              circle::CallbackFunc processCallback,
-             circle::reduceInitCallbackFunc reduceInitCallback,
+             circle::CallbackFunc reduceInitCallback,
              circle::reduceOperationCallbackFunc reduceOperationCallback,
              circle::reduceFinalizeCallbackFunc reduceFinalizeCallback,
              circle::RuntimeFlags runtimeFlags);
@@ -84,7 +84,8 @@ public:
   int8_t checkpoint();
 
   friend class circle::Circle;
-  friend int circle_dequeue(Circle *circle, uint8_t *element, size_t *szelement);
+  friend int circle_dequeue(Circle *circle, uint8_t *element,
+                            size_t *szelement);
 };
 
 } // namespace internal

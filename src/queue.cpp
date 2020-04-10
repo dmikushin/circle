@@ -182,7 +182,8 @@ int8_t Queue::pop(std::vector<uint8_t> &content) {
   auto current = strings[count - 1];
   auto len = head - current;
   content.resize(len);
-  std::copy(base.begin() + current, base.begin() + current + len, content.begin());
+  std::copy(base.begin() + current, base.begin() + current + len,
+            content.begin());
   head = current;
   count--;
 
@@ -194,7 +195,8 @@ int8_t Queue::pop(std::vector<uint8_t> &content) {
  */
 size_t Queue::lastSize() {
   if (count < 1) {
-    LOG(LogLevel::Debug, "Attempted to get last element size from an empty queue->");
+    LOG(LogLevel::Debug,
+        "Attempted to get last element size from an empty queue->");
     return -1;
   }
 
@@ -246,7 +248,8 @@ int8_t Queue::read(int rank) {
   while (std::getline(checkpoint_file, str)) {
     std::vector<uint8_t> content(str.begin(), str.end());
     if (push(content) < 0) {
-      LOG(LogLevel::Error, "Failed to push element on queue \"%s\"", str.c_str());
+      LOG(LogLevel::Error, "Failed to push element on queue \"%s\"",
+          str.c_str());
     }
 
     LOG(LogLevel::Debug, "Pushed %s onto queue->", str.c_str());
